@@ -83,6 +83,24 @@ previous blended frame to produce the next. A 3-minute clip at 1024 blocks wide
 is ~13 MB streamed against ~28.5 GB held as a frame stack, with identical
 output.
 
+**Video is sampled by seeking, not by playing.** Playing the clip and taking
+whatever frames the compositor presents ties decoding to the wall clock: any
+frame that costs more to pixelate than its share of real time is simply never
+decoded, and the result carries the right number of frames with a fraction of
+the motion — plus a frozen tail wherever playback finished first. Seeking to
+each wanted timestamp costs several times longer and cannot do either: one
+distinct decoded frame per output slot, and a duration that matches the source
+by construction.
+
+**Saving is two different operations.** In a browser an `<a download>` at a
+blob URL is the whole mechanism. Inside the Capacitor WebView it does nothing
+at all — no download manager is attached, and blob URLs are not something
+Android's DownloadManager can fetch — so the native platform goes through the
+Filesystem plugin instead. `js/save.js` picks between them and reports where
+the file landed; neither path is allowed to fail quietly. The plugin is reached
+through the runtime bridge rather than an import, so the web build still has no
+dependencies to install.
+
 **Palettes live in `localStorage`** as plain `{ name: ["#RRGGBB", ...] }`, and
 export to a JSON file you can move between devices yourself. Shipped palettes
 are versioned: adding new ones delivers them to existing installs without
@@ -108,6 +126,10 @@ on failure:
 
 114 checks. They need only Node — no npm install.
 
+What they do not cover is anything needing a browser: saving a file, decoding a
+video, the layout. Those are checked by driving the real app in headless
+Firefox against a local server.
+
 ---
 
 ## Building the Android app
@@ -115,7 +137,7 @@ on failure:
 Requires the Android SDK and **JDK 17** (newer JDKs are not yet supported by the
 Gradle plugin).
 
-    npm install                 # first time only
+    npm install                 # first time only; pulls @capacitor/filesystem
     ./sync-web.sh               # stage the app into www/
     npx cap sync android
     cd android && ./gradlew assembleDebug

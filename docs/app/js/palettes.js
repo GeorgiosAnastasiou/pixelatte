@@ -14,7 +14,8 @@ import * as store from './store.js';
 import { hexToRgb } from './core.js';
 import { createColorPicker } from './colorpicker.js';
 import { proximityOrder } from './palette_order.js';
-import { $, makeLogger, downloadBlob, setLabel } from './ui.js';
+import { $, makeLogger, setLabel } from './ui.js';
+import { saveBlob } from './save.js';
 
 const log = makeLogger('pal-log');
 
@@ -340,10 +341,15 @@ export function init() {
     });
 
     // --- export / import ---
-    $('pal-export').addEventListener('click', () => {
-        downloadBlob(new Blob([store.toJSON(palettes)], { type: 'application/json' }),
-            `pixelator-palettes-${new Date().toISOString().slice(0, 10)}.json`);
-        log(`Exported ${Object.keys(palettes).length} palettes.`);
+    $('pal-export').addEventListener('click', async () => {
+        const blob = new Blob([store.toJSON(palettes)], { type: 'application/json' });
+        const name = `pixelator-palettes-${new Date().toISOString().slice(0, 10)}.json`;
+        try {
+            const where = await saveBlob(blob, name);
+            log(`Exported ${Object.keys(palettes).length} palettes. ${where}`, 'good');
+        } catch (err) {
+            log(`Could not export the palettes: ${err.message}`, 'err');
+        }
     });
 
     $('pal-import-btn').addEventListener('click', () => $('pal-import').click());

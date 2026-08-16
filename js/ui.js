@@ -69,18 +69,10 @@ export function fillPaletteSelect(sel, palettes, preferred) {
     else if (names.length) sel.value = names[0];
 }
 
-/** Trigger a browser download for a Blob. */
-export function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    // Revoke late; some WebViews read the URL asynchronously.
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
+// Saving a blob lives in save.js, not here: it is one call on the web and a
+// different one entirely inside the WebView, and leaving a browser-only
+// downloadBlob() in the shared helpers is how the Android build ended up with
+// three buttons that quietly did nothing.
 
 /** Decode a File into ImageData plus its natural size. */
 export async function fileToImageData(file) {

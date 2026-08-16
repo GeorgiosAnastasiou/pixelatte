@@ -20,8 +20,10 @@ import { chooseMapper, streamingMemoryMB } from './pipeline.js';
 import { firstFrame, renderStill } from './preview.js';
 import * as encodeWC from './encode.js';
 import { getPaletteRgb, onPalettesChanged } from './palettes.js';
+import { attachPalettePicker } from './palettepicker.js';
 import { linkBlockSliders } from './blocksize.js';
-import { $, makeLogger, bindSlider, fillPaletteSelect, downloadBlob, nextFrame, setLabel } from './ui.js';
+import { $, makeLogger, bindSlider, fillPaletteSelect, nextFrame, setLabel } from './ui.js';
+import { saveBlob } from './save.js';
 
 const log = makeLogger('vid-log');
 
@@ -142,12 +144,47 @@ function makeReducer({ bw, bh, offsets, exact }, srcW, srcH) {
 }
 
 /**
+ * Seek to an exact time and resolve once a frame is decoded there.
+ *
+ * `seeked` is the only reliable signal that the element is showing the new
+ * frame; drawing before it lands would silently reduce the previous one twice.
+ * Setting currentTime to where we already are is not guaranteed to fire it at
+ * all, hence the early return, and the timeout is a guard against a decoder
+ * that never answers rather than an expected path.
+ */
+function seekTo(video, t) {
+    return new Promise((resolve) => {
+        if (Math.abs(video.currentTime - t) < 1e-4 && video.readyState >= 2) { resolve(); return; }
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            video.removeEventListener('seeked', finish);
+            resolve();
+        };
+        const timer = setTimeout(finish, 5000);
+        video.addEventListener('seeked', finish);
+        video.currentTime = t;
+    });
+}
+
+/**
  * Decode, process and record in one pass.
  *
- * Playback runs at 1x because MediaRecorder timestamps by wall clock, so the
- * encode is real-time regardless; decoding faster would buy nothing and would
- * only risk outrunning the recorder. Total time is therefore about the clip
- * length. Replacing MediaRecorder with WebCodecs is what removes that floor.
+ * Frames are sampled by seeking to each wanted timestamp rather than by playing
+ * the clip and taking whatever the compositor happens to present. Playback ties
+ * decoding to the wall clock: if a frame costs longer to pixelate than its
+ * share of real time — which large block sizes and a phone-shot 60 fps source
+ * make ordinary — the media clock runs on regardless and those frames are never
+ * decoded at all. The output then carries the right number of frames but only a
+ * fraction of the motion, and if playback reaches the end while processing is
+ * still behind, the remainder is padded with a frozen frame.
+ *
+ * Seeking removes the clock from the loop entirely: one distinct decoded frame
+ * per output slot, however long each takes. A clip is sampled at exactly
+ * duration x fps positions, so the output timeline matches the source by
+ * construction rather than by correction afterwards.
  */
 async function streamProcess(file, cfg, onProgress) {
     const palette = getPaletteRgb(cfg.paletteName);
@@ -158,8 +195,10 @@ async function streamProcess(file, cfg, onProgress) {
     video.playsInline = true;
     video.preload = 'auto';
 
+    // loadeddata rather than loadedmetadata: sampling starts by drawing the
+    // frame at t=0 without seeking to it, so a decoded frame has to exist first.
     await new Promise((resolve, reject) => {
-        video.onloadedmetadata = () => resolve();
+        video.onloadeddata = () => resolve();
         video.onerror = () => reject(new Error('could not decode this video'));
     });
 
@@ -225,21 +264,11 @@ async function streamProcess(file, cfg, onProgress) {
     // --- streaming state: this is the whole memory footprint ---
     let state = null;                       // Float32Array, previous blended frame
     const a = cfg.alpha, ia = 1 - cfg.alpha;
-    const interval = 1 / cfg.fps;
     const outFrameMs = 1000 / (cfg.fps * cfg.hold);
-    let want = 0, frames = 0, emitted = 0, t0 = 0;
-    let slowFrames = 0, filledSlots = 0;
-    let lastReduced = null;
+    let frames = 0, emitted = 0, t0 = 0;
+    let slowFrames = 0;
 
-    /**
-     * Emit one output slot from an already-reduced frame.
-     *
-     * Split from decoding because playback above 1x presents fewer frames than
-     * we sample: when the media clock jumps past several wanted timestamps, each
-     * missed slot is filled from the most recent frame so the output timeline
-     * keeps its exact length. The blend still advances once per slot, so filled
-     * slots continue smoothing rather than being frozen duplicates.
-     */
+    /** Blend, map and encode one reduced frame into one output slot. */
     const emitFrom = async (cur) => {
         if (t0 === 0) t0 = performance.now();
 
@@ -282,66 +311,20 @@ async function streamProcess(file, cfg, onProgress) {
         frames++;
     };
 
-    /** Decode the current frame once, then fill every output slot it covers. */
-    const consume = async (mediaTime) => {
-        lastReduced = reduce(video);
-        let guard = 0;
-        while (want <= mediaTime + 1e-6 && guard < 600) {
-            if (guard > 0) filledSlots++;      // this slot reused the same source frame
-            await emitFrom(lastReduced);
-            want += interval;
-            guard++;
-        }
-    };
-
     if (rec) rec.start();
-    // With WebCodecs there is no real-time constraint, so decode faster than
-    // playback. 2x rather than 4x: above that the browser presents noticeably
-    // fewer frames, and every skipped frame has to be filled from the previous
-    // one. MediaRecorder must stay at 1x because it timestamps by wall clock.
-    video.playbackRate = wc ? 2 : 1;
 
-    const useRVFC = typeof video.requestVideoFrameCallback === 'function';
-    if (useRVFC) {
-        await new Promise((resolve, reject) => {
-            let busy = false;
-            const tick = async (_now, info) => {
-                if (cancelled) { resolve(); return; }
-                if (!busy && info.mediaTime + 1e-6 >= want) {
-                    busy = true;
-                    await consume(info.mediaTime);
-                    busy = false;
-                    onProgress(Math.min(1, info.mediaTime / video.duration));
-                }
-                if (!video.ended) video.requestVideoFrameCallback(tick);
-            };
-            video.requestVideoFrameCallback(tick);
-            video.onended = () => resolve();
-            video.onerror = () => reject(new Error('decode failed mid-playback'));
-            video.play().catch(reject);
-        });
-    } else {
-        // Seek fallback: slower, but works where rVFC is unavailable.
-        for (let t = 0; t < video.duration && !cancelled; t += interval) {
-            await new Promise((resolve) => {
-                let done = false;
-                const finish = () => { if (!done) { done = true; resolve(); } };
-                video.onseeked = finish;
-                video.currentTime = t;
-                setTimeout(finish, 2000);      // guard: seeked can fail to fire
-            });
-            await consume(t);
-            onProgress(Math.min(1, t / video.duration));
-        }
-    }
+    // One output slot per sampled position, and one decoded frame per slot.
+    // The count comes from the source duration, so the result is exactly as
+    // long as the clip whatever the machine does with the time in between.
+    const wanted = Math.max(1, Math.round(video.duration * cfg.fps));
+    // The last sample sits just inside the clip: seeking to duration exactly
+    // lands past the final frame, where some decoders present nothing at all.
+    const lastT = Math.max(0, video.duration - 1e-3);
 
-    // Playback can end a little before the final sampled timestamp, which would
-    // leave the output shorter than the source. Pad to the expected count from
-    // the last frame so the durations match.
-    const expectedFrames = Math.max(1, Math.floor(video.duration * cfg.fps));
-    while (lastReduced && frames < expectedFrames && !cancelled) {
-        filledSlots++;
-        await emitFrom(lastReduced);
+    for (let i = 0; i < wanted && !cancelled; i++) {
+        await seekTo(video, Math.min(i / cfg.fps, lastT));
+        await emitFrom(reduce(video));
+        onProgress((i + 1) / wanted);
     }
 
     let blob;
@@ -370,7 +353,7 @@ async function streamProcess(file, cfg, onProgress) {
     const drift = wc ? 1 : (expectedMs > 0 ? elapsedMs / expectedMs : 1);
 
     return {
-        blob, frames, slowFrames, filledSlots, drift, bw, bh, srcW, srcH,
+        blob, frames, slowFrames, drift, bw, bh, srcW, srcH,
         encoder: wc ? `WebCodecs ${wc.codec}` : `MediaRecorder ${mimeType}`,
     };
 }
@@ -417,10 +400,6 @@ async function run() {
             `${(outputBlob.size / 1048576).toFixed(1)} MB · ${r.encoder}`;
         log(`${cancelled ? 'Cancelled after' : 'Done in'} ${total.toFixed(1)}s — ` +
             `${r.frames} frames, ${(outputBlob.size / 1048576).toFixed(1)} MB.`, 'good');
-        if (r.filledSlots > 0) {
-            log(`${r.filledSlots} of ${r.frames} frames were filled from the previous frame ` +
-                `because decoding could not deliver one in time. The duration is still exact.`);
-        }
         if (r.drift > 1.15) {
             log(`Heads up: processing ran ${Math.round((r.drift - 1) * 100)}% behind the ` +
                 `frame schedule, so the output plays slower than ${cfg.fps} fps. Try a ` +
@@ -437,6 +416,7 @@ async function run() {
 
 export function init() {
     onPalettesChanged((palettes) => fillPaletteSelect($('vid-palette'), palettes));
+    attachPalettePicker('vid-palette');
 
     const paintFps = () => {
         const look = currentFps();
@@ -498,11 +478,14 @@ export function init() {
 
     $('vid-run').addEventListener('click', run);
 
-    $('vid-save').addEventListener('click', () => {
-        if (!outputBlob) return;
+    $('vid-save').addEventListener('click', async () => {
+        if (!outputBlob) { log('Nothing to save — run the clip first.', 'err'); return; }
         const ext = outputBlob.type.includes('mp4') ? 'mp4' : 'webm';
-        downloadBlob(outputBlob, `${sourceName}-pixelated.${ext}`);
-        log(`Saved .${ext}.`, 'good');
+        try {
+            log(await saveBlob(outputBlob, `${sourceName}-pixelated.${ext}`), 'good');
+        } catch (err) {
+            log(`Could not save the video: ${err.message}`, 'err');
+        }
     });
 
     log('Ready — choose a video.');

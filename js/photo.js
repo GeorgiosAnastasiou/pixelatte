@@ -3,9 +3,11 @@
 import { renderStill } from './preview.js';
 import { chooseMapper } from './pipeline.js';
 import { getPaletteRgb, onPalettesChanged } from './palettes.js';
+import { attachPalettePicker } from './palettepicker.js';
 import { linkBlockSliders } from './blocksize.js';
 import { setSubject } from './subject.js';
-import { $, makeLogger, bindSlider, fillPaletteSelect, downloadBlob, fileToImageData, nextFrame } from './ui.js';
+import { $, makeLogger, bindSlider, fillPaletteSelect, fileToImageData, nextFrame } from './ui.js';
+import { saveBlob } from './save.js';
 
 const log = makeLogger('ph-log');
 
@@ -58,6 +60,7 @@ async function render() {
 
 export function init() {
     onPalettesChanged((palettes) => fillPaletteSelect($('ph-palette'), palettes));
+    attachPalettePicker('ph-palette');
 
     blocks = linkBlockSliders({
         wId: 'ph-bw', wValId: 'ph-bw-val', hId: 'ph-bh', hValId: 'ph-bh-val',
@@ -92,10 +95,13 @@ export function init() {
     $('ph-run').addEventListener('click', render);
 
     $('ph-save').addEventListener('click', () => {
-        $('ph-canvas').toBlob((blob) => {
-            if (!blob) { log('Export failed.', 'err'); return; }
-            downloadBlob(blob, `${sourceName}-pixelated.png`);
-            log('Saved PNG.', 'good');
+        $('ph-canvas').toBlob(async (blob) => {
+            if (!blob) { log('Export failed — the canvas produced no image.', 'err'); return; }
+            try {
+                log(await saveBlob(blob, `${sourceName}-pixelated.png`), 'good');
+            } catch (err) {
+                log(`Could not save the PNG: ${err.message}`, 'err');
+            }
         }, 'image/png');
     });
 
