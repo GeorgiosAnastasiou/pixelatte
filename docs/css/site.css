@@ -240,3 +240,12 @@ footer {
     color: var(--muted); font-size: 0.85rem;
 }
 footer p { max-width: var(--measure); }
+
+
+/* The mark, above the wordmark on the masthead. */
+.site-logo {
+    display: block;
+    width: 132px; height: auto;
+    margin: 0 0 1rem;
+    image-rendering: pixelated;
+}

@@ -6,6 +6,7 @@ import { kmeans, samplePixels } from './kmeans.js';
 import { rgbToHex, mapToPaletteExact, boxDownsample, blockHeight } from './core.js';
 import { addPalette } from './palettes.js';
 import { setSubject } from './subject.js';
+import { setMediaLoaded } from './shell.js';
 import { $, makeLogger, bindSlider, fileToImageData, nextFrame, setLabel } from './ui.js';
 
 const log = makeLogger('ex-log');
@@ -167,6 +168,7 @@ export function init() {
             // on; from here the tool bar takes over. See "extract gating" in
             // app.css for the other half of this.
             $('ex-empty').classList.add('hidden');
+            setMediaLoaded('extract', true);
             $('app').dataset.exReady = '1';
             $('ex-info').textContent =
                 `${file.name} — ${imgData.width} x ${imgData.height} ` +

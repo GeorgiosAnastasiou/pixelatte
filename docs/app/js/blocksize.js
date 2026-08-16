@@ -85,12 +85,16 @@ export function blockRange(w, h) {
  * @param {() => ({w:number,h:number}|null)} o.getSourceSize  natural media size, or null if none loaded
  * @param {(dims:{bw:number,bh:number}) => void} [o.onChange]
  */
-export function linkBlockSliders({ wId, wValId, hId, hValId, badgeId, getSourceSize, onChange }) {
+export function linkBlockSliders({ wId, wValId, hId, hValId, badgeId, wNumId, hNumId,
+                                   getSourceSize, onChange }) {
     const wEl = document.getElementById(wId);
     const hEl = document.getElementById(hId);
     const wVal = document.getElementById(wValId);
     const hVal = document.getElementById(hValId);
     const badge = badgeId ? document.getElementById(badgeId) : null;
+    // Optional: a sliders-only control is unusable for hitting an exact number.
+    const wNum = wNumId ? document.getElementById(wNumId) : null;
+    const hNum = hNumId ? document.getElementById(hNumId) : null;
 
     let driver = null;         // 'w' | 'h' | null — which slider the user is holding
     let settleTimer = null;
@@ -118,11 +122,21 @@ export function linkBlockSliders({ wId, wValId, hId, hValId, badgeId, getSourceS
         // range input keeps whatever it was given until something reassigns it.
         wEl.value = String(clampTo(wEl, Number(wEl.value)));
         hEl.value = String(clampTo(hEl, Number(hEl.value)));
+
+        // Mirror the bounds onto the typed fields so the browser's own
+        // validation agrees with ours instead of contradicting it.
+        if (wNum) { wNum.min = wEl.min; wNum.max = wEl.max; }
+        if (hNum) { hNum.min = hEl.min; hNum.max = hEl.max; }
     }
 
     function paint() {
         wVal.textContent = wEl.value;
         hVal.textContent = hEl.value;
+        // Never overwrite the field being typed into: the aspect lock rewrites
+        // the partner on every keystroke, and doing that to the caret's own
+        // field would make it impossible to type a two-digit number.
+        if (wNum && document.activeElement !== wNum) wNum.value = wEl.value;
+        if (hNum && document.activeElement !== hNum) hNum.value = hEl.value;
         if (badge) badge.textContent = `${wEl.value} x ${hEl.value} blocks`;
     }
 
@@ -193,6 +207,31 @@ export function linkBlockSliders({ wId, wValId, hId, hValId, badgeId, getSourceS
         setDriver('h');
         fromHeight();
     });
+
+    /**
+     * Accept a typed number.
+     *
+     * On commit rather than on every keystroke: clamping as you type turns "1"
+     * of "180" into the minimum and eats the rest of the number. Out-of-range
+     * values are clamped rather than rejected, and paint() writes the result
+     * back, so the field always ends up showing what was actually applied.
+     */
+    function commitNumber(numEl, sliderEl, apply) {
+        const raw = Number(numEl.value);
+        if (!Number.isFinite(raw) || numEl.value.trim() === '') { paint(); return; }
+        release();                     // typing is not a drag; nothing stays frozen
+        sliderEl.value = String(clampTo(sliderEl, raw));
+        apply();
+    }
+
+    if (wNum) {
+        wNum.addEventListener('change', () => commitNumber(wNum, wEl, () => fromWidth()));
+        wNum.addEventListener('blur', () => paint());
+    }
+    if (hNum) {
+        hNum.addEventListener('change', () => commitNumber(hNum, hEl, () => fromHeight()));
+        hNum.addEventListener('blur', () => paint());
+    }
 
     const dims = () => ({ bw: Number(wEl.value), bh: Number(hEl.value) });
 

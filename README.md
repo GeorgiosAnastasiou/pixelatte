@@ -1,4 +1,4 @@
-# Pixelator
+# Pixelatte
 
 Pixelate photos and video against a palette you control.
 
@@ -6,7 +6,7 @@ Set the block grid, pick the colours the image is allowed to use, and watch the
 result redraw as you drag. It runs entirely in the browser — no server, no
 account, nothing uploaded. The Android app is the same code in a WebView.
 
-**Try it:** https://georgiosanastasiou.github.io/video_pixelator/
+**Try it:** https://georgiosanastasiou.github.io/pixelatte/
 
 ---
 
@@ -46,6 +46,7 @@ To preview the **website** (landing page plus the app underneath it):
 
     index.html          the app
     css/app.css         one stylesheet, six themes, no framework
+                        --ui at the top scales the whole interface
     js/                 ES modules, no build step, no dependencies
     assets/welcome/     drop pixel art here; one is shown at random on launch
     docs/               the website. Committed, because Pages serves it
@@ -92,14 +93,37 @@ each wanted timestamp costs several times longer and cannot do either: one
 distinct decoded frame per output slot, and a duration that matches the source
 by construction.
 
-**Saving is two different operations.** In a browser an `<a download>` at a
-blob URL is the whole mechanism. Inside the Capacitor WebView it does nothing
-at all — no download manager is attached, and blob URLs are not something
-Android's DownloadManager can fetch — so the native platform goes through the
-Filesystem plugin instead. `js/save.js` picks between them and reports where
-the file landed; neither path is allowed to fail quietly. The plugin is reached
-through the runtime bridge rather than an import, so the web build still has no
-dependencies to install.
+**Saving is three different operations.** In a browser an `<a download>` at a
+blob URL is the whole mechanism. Inside the Capacitor WebView it does nothing at
+all, so the native platform goes through the Filesystem plugin. Inside a social
+app's in-app browser — Instagram, Facebook, TikTok — it also does nothing, and
+there is no plugin to fall back on, so those get the share sheet and then a
+long-press-to-save panel. `js/save.js` picks between them and reports where the
+file landed; none of the paths is allowed to fail quietly.
+
+**The photo stage is a view onto a block grid, not a picture of one.** Three
+buffers, each rebuilt only when its own inputs move: `base` (the source reduced
+to blocks, before the palette), `deltas` (the brush layer) and the mapped
+result. Reducing a large photo costs tens of milliseconds and mapping ~20,000
+blocks costs well under one, so a brush stroke only ever invalidates the third —
+which is what makes both the live preview and painting affordable.
+
+**The brush nudges, it does not paint.** It adds a signed offset of at most 16
+per channel to a block's *pre-palette* value; the block is then matched to the
+palette like every other one. So a stroke either pushes a block across a
+boundary or does nothing visible, and the output can never contain a colour the
+palette lacks. Within a stroke each block is touched once however slowly you
+drag, so the result does not depend on the speed of your hand. Undo is unlimited
+and stores the offsets a stroke replaced rather than the stroke itself, so
+overlapping strokes undo exactly.
+
+**Spatial smoothing runs on the block grid, before the palette.** After
+matching, every value is already one of a handful of colours and averaging them
+produces colours the palette lacks. `despeckle` is a median — an isolated block
+is a minority in its own neighbourhood, so it vanishes while edges stay put —
+and `soften` is a separable distance-weighted mean, O(blocks) whatever the
+radius. The same filter is applied globally by a strength dial or locally by the
+brush in Smooth mode.
 
 **Palettes live in `localStorage`** as plain `{ name: ["#RRGGBB", ...] }`, and
 export to a JSON file you can move between devices yourself. Shipped palettes
@@ -123,8 +147,11 @@ on failure:
     node js/extract.test.js         # palette extraction from an image
     node js/blocksize.test.js       # block-grid limits and aspect locking
     node js/palette_order.test.js   # proximity ordering of a palette strip
+    node js/brush.test.js           # stamp shapes, stroke masking, undo/redo
+    node js/crop.test.js            # ratio parsing, locked drags, clamping
+    node js/smooth.test.js          # despeckle vs soften, masked blending
 
-114 checks. They need only Node — no npm install.
+276 checks. They need only Node — no npm install.
 
 What they do not cover is anything needing a browser: saving a file, decoding a
 video, the layout. Those are checked by driving the real app in headless
@@ -134,8 +161,11 @@ Firefox against a local server.
 
 ## Building the Android app
 
-Requires the Android SDK and **JDK 17** (newer JDKs are not yet supported by the
-Gradle plugin).
+Requires the Android SDK and a **JDK of 17 or 21**. 21 is what this is built
+with; 25 is not yet accepted by the Gradle plugin, so set `JAVA_HOME` explicitly
+if it is your default:
+
+    export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
 
     npm install                 # first time only; pulls @capacitor/filesystem
     ./sync-web.sh               # stage the app into www/

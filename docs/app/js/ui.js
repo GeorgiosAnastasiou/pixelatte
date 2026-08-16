@@ -74,6 +74,66 @@ export function fillPaletteSelect(sel, palettes, preferred) {
 // downloadBlob() in the shared helpers is how the Android build ended up with
 // three buttons that quietly did nothing.
 
+/**
+ * Turn a button into a two-press confirmation.
+ *
+ * The first press asks, the second acts, and the question withdraws itself
+ * after a few seconds so a button left mid-question does not sit there armed.
+ * Chosen over a dialog because the action is destructive but small: a modal for
+ * clearing a brush layer is more interruption than the risk deserves, while no
+ * guard at all makes one stray tap cost every stroke.
+ *
+ * @param {string} id button id
+ * @param {string} question what the armed button says
+ * @param {() => void} onConfirm run on the second press
+ */
+export function confirmButton(id, question, onConfirm) {
+    const btn = $(id);
+    if (!btn) return;
+    const resting = btn.textContent;
+    let armed = false;
+    let timer = null;
+
+    const disarm = () => {
+        armed = false;
+        clearTimeout(timer);
+        setLabel(btn, resting);
+        btn.classList.remove('armed');
+    };
+
+    btn.addEventListener('click', () => {
+        if (!armed) {
+            armed = true;
+            setLabel(btn, question);
+            btn.classList.add('armed');
+            timer = setTimeout(disarm, 5000);
+            return;
+        }
+        disarm();
+        onConfirm();
+    });
+
+    // An armed button that scrolls out of sight should not stay armed.
+    btn.addEventListener('blur', disarm);
+}
+
+/**
+ * Enable or disable a strength slider that has nothing to act on.
+ *
+ * At radius 0 the filter is not running, so strength cannot change anything and
+ * a live-looking slider would be a lie. It keeps whatever value it was left at
+ * rather than snapping back: coming out of radius 0 should restore the setting
+ * that was in use, not overwrite it with a default. Fresh launches start at
+ * 100 because the markup says so, which is as much memory as this needs.
+ */
+export function setStrengthActive(id, active) {
+    const el = $(id);
+    if (!el) return;
+    el.disabled = !active;
+    el.closest('.field')?.classList.toggle('inert', !active);
+    el.title = active ? '' : 'Nothing to apply at radius 0';
+}
+
 /** Decode a File into ImageData plus its natural size. */
 export async function fileToImageData(file) {
     const bitmap = await createImageBitmap(file);

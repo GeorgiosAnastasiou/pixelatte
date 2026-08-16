@@ -11,18 +11,31 @@
 // of truth that could disagree with the first.
 
 import * as store from './store.js';
-import { getPalettes, onPalettesChanged } from './palettes.js';
+import { getPalettes, getAddedCount, onPalettesChanged } from './palettes.js';
 import { proximityOrder } from './palette_order.js';
 
 /** Colours ordered by proximity, so a strip reads as a gradient not a jumble. */
-function swatchStrip(colors) {
+function swatchStrip(colors, added = 0) {
     const wrap = document.createElement('div');
     wrap.className = 'strip';
-    for (const i of proximityOrder(colors)) {
-        const s = document.createElement('span');
-        s.style.background = colors[i];
-        wrap.appendChild(s);
+    const boundary = Math.max(0, colors.length - added);
+
+    const group = (from, to) => {
+        const slice = colors.slice(from, to);
+        for (const i of proximityOrder(slice)) {
+            const s = document.createElement('span');
+            s.style.background = slice[i];
+            wrap.appendChild(s);
+        }
+    };
+
+    group(0, boundary);
+    if (added > 0 && boundary > 0) {
+        const div = document.createElement('i');
+        div.className = 'strip-div';
+        wrap.appendChild(div);
     }
+    group(boundary, colors.length);
     return wrap;
 }
 
@@ -72,7 +85,7 @@ export function attachPalettePicker(selectId) {
         count.className = 'pal-row-count';
         count.textContent = String(colors.length);
 
-        btn.append(swatchStrip(colors), label, count);
+        btn.append(swatchStrip(colors, getAddedCount(name)), label, count);
         btn.addEventListener('click', () => choose(name));
         return btn;
     };

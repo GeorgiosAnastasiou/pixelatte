@@ -3,9 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<title>Pixelator</title>
+<title>Pixelatte</title>
+<meta name="description" content="Pixelate photos and video against a chosen or extracted palette. Runs entirely in your browser: nothing is uploaded and there is no account.">
 <!-- Inline so the packaged app makes no network request for it. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23111827'/%3E%3Crect x='2' y='2' width='6' height='6' fill='%239BBC0F'/%3E%3Crect x='8' y='8' width='6' height='6' fill='%2360A5FA'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IiMxQTEyMEMiLz48cmVjdCB4PSI5IiB5PSIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTQiIHk9IjEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSI4IiB5PSIyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTUiIHk9IjIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSI4IiB5PSIzIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTUiIHk9IjMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSI5IiB5PSI0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTQiIHk9IjQiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSI5IiB5PSI1IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTQiIHk9IjUiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSI4IiB5PSI2IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuNzIpIi8+PHJlY3QgeD0iMTUiIHk9IjYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC43MikiLz48cmVjdCB4PSIzIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iNCIgeT0iOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjUiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI2IiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iNyIgeT0iOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjgiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI5IiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMTAiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIxMSIgeT0iOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjEyIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMTMiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIxNCIgeT0iOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE1IiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMTYiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIxNyIgeT0iOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE4IiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMyIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjQiIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSI1IiB5PSI5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iNiIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjciIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSI4IiB5PSI5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iOSIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjEwIiB5PSI5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTEiIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSIxMiIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjEzIiB5PSI5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTQiIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSIxNSIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjE2IiB5PSI5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTciIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSIxOCIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjMiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iNCIgeT0iMTAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSI1IiB5PSIxMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjYiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iNyIgeT0iMTAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiM2ZjQzMjIiLz48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzZmNDMyMiIvPjxyZWN0IHg9IjkiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTEiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTIiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTMiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTQiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTUiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTYiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTciIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjNmY0MzIyIi8+PHJlY3QgeD0iMTgiIHk9IjEwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMyIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI0IiB5PSIxMSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjUiIHk9IjExIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNiIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI3IiB5PSIxMSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjgiIHk9IjExIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOSIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMCIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMSIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMiIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMyIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNCIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNSIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNiIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNyIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOCIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMCIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMSIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMiIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIzIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjQiIHk9IjEyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNSIgeT0iMTIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI2IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjciIHk9IjEyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOCIgeT0iMTIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI5IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEwIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjExIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEyIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEzIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE0IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE1IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE2IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE3IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE4IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIwIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIzIiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIiIHk9IjEzIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMyIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI0IiB5PSIxMyIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjUiIHk9IjEzIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNiIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI3IiB5PSIxMyIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjgiIHk9IjEzIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOSIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMCIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMSIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMiIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMyIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNCIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNSIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNiIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNyIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOCIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOSIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMSIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMyIgeT0iMTMiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyIiB5PSIxNCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjMiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNCIgeT0iMTQiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI1IiB5PSIxNCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjYiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNyIgeT0iMTQiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI4IiB5PSIxNCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjkiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTAiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTEiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTIiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTMiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTQiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTUiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTYiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTciIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTgiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTkiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMjEiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMjMiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMiIgeT0iMTUiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIzIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjQiIHk9IjE1IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNSIgeT0iMTUiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI2IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjciIHk9IjE1IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOCIgeT0iMTUiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI5IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEwIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjExIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEyIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEzIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE0IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE1IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE2IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE3IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE4IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE5IiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIxIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIzIiB5PSIxNSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjIiIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMyIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI0IiB5PSIxNiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjUiIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNiIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI3IiB5PSIxNiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjgiIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOSIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMCIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMSIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMiIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMyIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNCIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNSIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNiIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNyIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOCIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOSIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMSIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMiIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyMyIgeT0iMTYiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIyIiB5PSIxNyIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjMiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNCIgeT0iMTciIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI1IiB5PSIxNyIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjYiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNyIgeT0iMTciIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI4IiB5PSIxNyIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjkiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTAiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTEiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTIiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTMiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTQiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTUiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTYiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTciIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTgiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iMTkiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iMyIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI0IiB5PSIxOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjUiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNiIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI3IiB5PSIxOCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjgiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMCIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMiIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxMyIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNCIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNiIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxNyIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSIxOCIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSIzIiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjQiIHk9IjE5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iNSIgeT0iMTkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI2IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjciIHk9IjE5IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjZTZkNWJiIi8+PHJlY3QgeD0iOCIgeT0iMTkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNlNmQ1YmIiLz48cmVjdCB4PSI5IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEwIiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjExIiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEyIiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjEzIiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE0IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE1IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE2IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE3IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2U2ZDViYiIvPjxyZWN0IHg9IjE4IiB5PSIxOSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjQiIHk9IjIwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iNSIgeT0iMjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI2IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjciIHk9IjIwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMmIxZDEyIi8+PHJlY3QgeD0iOCIgeT0iMjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMyYjFkMTIiLz48cmVjdCB4PSI5IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjEwIiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjExIiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjEyIiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjEzIiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE0IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE1IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE2IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iIzJiMWQxMiIvPjxyZWN0IHg9IjMiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iNCIgeT0iMjEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjMmE2ODMiLz48cmVjdCB4PSI1IiB5PSIyMSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjYiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iNyIgeT0iMjEiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjMmE2ODMiLz48cmVjdCB4PSI4IiB5PSIyMSIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjkiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTAiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTEiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTIiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTMiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTQiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTUiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTYiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTciIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMTgiIHk9IjIxIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iMiIgeT0iMjIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjMmE2ODMiLz48cmVjdCB4PSIzIiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjQiIHk9IjIyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iNSIgeT0iMjIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjMmE2ODMiLz48cmVjdCB4PSI2IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjciIHk9IjIyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjYzJhNjgzIi8+PHJlY3QgeD0iOCIgeT0iMjIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjMmE2ODMiLz48cmVjdCB4PSI5IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjEwIiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjExIiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjEyIiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjEzIiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE0IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE1IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE2IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE3IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE4IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjxyZWN0IHg9IjE5IiB5PSIyMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2MyYTY4MyIvPjwvc3ZnPg==">
+
+<!-- Link previews. Without these a shared link renders as a bare URL with no
+     title, description or image, which is why it looked broken when posted. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pixelatte">
+<meta property="og:url" content="https://georgiosanastasiou.github.io/pixelatte/app/">
+<meta property="og:title" content="Pixelatte">
+<meta property="og:description" content="Pixelate photos and video against a chosen or extracted palette. Runs entirely in your browser: nothing is uploaded and there is no account.">
+<meta property="og:image" content="https://georgiosanastasiou.github.io/pixelatte/assets/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A pixelated colour field with the word PIXELATTE across it">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pixelatte">
+<meta name="twitter:description" content="Pixelate photos and video against a chosen or extracted palette. Runs entirely in your browser: nothing is uploaded and there is no account.">
+<meta name="twitter:image" content="https://georgiosanastasiou.github.io/pixelatte/assets/preview.png">
+<meta name="theme-color" content="#111827">
 <link rel="stylesheet" href="css/app.css">
 <script>
 // Applied before first paint so the page never flashes the default theme and
@@ -41,9 +59,38 @@
         <button class="mode" data-mode="palettes" data-icon="palette"  role="tab"><span>Palettes</span></button>
         <button class="mode" data-mode="photo"    data-icon="image"    role="tab"><span>Photo</span></button>
         <button class="mode" data-mode="video"    data-icon="film"     role="tab"><span>Video</span></button>
-        <button class="mode" data-mode="account"  data-icon="account"  role="tab"><span>Account</span></button>
-        <button class="mode" data-mode="settings" data-icon="settings" role="tab"><span>Settings</span></button>
+        <!-- The last four are places you visit rather than work in. A desktop
+             window has room to show all eight, so it does; a phone does not, so
+             below the breakpoint these collapse into the caret beside them and
+             the four workspaces keep their labels legible. Both sets are in the
+             markup and CSS chooses, rather than script rebuilding the bar. -->
+        <button class="mode grouped" data-mode="settings" data-icon="settings" role="tab"><span>Settings</span></button>
+        <button class="mode grouped" data-mode="account"  data-icon="account"  role="tab"><span>Account</span></button>
+        <button class="mode grouped" data-mode="tips"     data-icon="tips"     role="tab"><span>Tips</span></button>
+        <button class="mode grouped" data-mode="legacy"   data-icon="legacy"   role="tab"><span>Legacy</span></button>
+
+        <button class="mode more" id="mode-more" data-icon="more"
+                aria-haspopup="menu" aria-expanded="false">
+            <span>More</span><i class="caret" aria-hidden="true"></i>
+        </button>
     </header>
+
+    <div class="mode-menu" id="mode-menu" role="menu" aria-labelledby="mode-more" hidden>
+        <button class="mode-menu-item" data-mode="settings" role="menuitem" data-icon="settings"><span>Settings</span></button>
+        <button class="mode-menu-item" data-mode="account"  role="menuitem" data-icon="account"><span>Account</span></button>
+        <button class="mode-menu-item" data-mode="tips"     role="menuitem" data-icon="tips"><span>Tips</span></button>
+        <button class="mode-menu-item" data-mode="legacy"   role="menuitem" data-icon="legacy"><span>Legacy</span></button>
+    </div>
+
+    <!-- Shown only inside a social app's in-app browser, where downloads do
+         not exist. Said once, up front, rather than after a save has already
+         appeared to do nothing. -->
+    <div class="inapp-banner hidden" id="inapp-banner" role="status">
+        <span>This page is open in <b id="inapp-name">another app</b>'s browser, where saving is
+            blocked. Opening it in a normal browser allows saving.</span>
+        <button type="button" id="inapp-copy" class="ghost">Copy link</button>
+        <button type="button" id="inapp-dismiss" class="ghost" aria-label="Dismiss">×</button>
+    </div>
 
     <!-- ======================= MIDDLE: stage ======================= -->
     <main class="stage" id="stage">
@@ -53,6 +100,26 @@
         <div class="stage-media bleed" data-for="welcome">
             <img id="welcome-img" class="media cover hidden" alt="">
             <canvas id="welcome-canvas" class="media cover"></canvas>
+
+            <!-- The launch screen. Nothing but the picture, the name and an
+                 invitation until the first press; the four workspaces then
+                 arrive in the middle of the artwork rather than in a bar the
+                 user has not been given a reason to look at yet. -->
+            <div class="splash" id="splash">
+                <p class="splash-title">Pixelatte</p>
+                <canvas id="splash-logo" class="splash-logo"
+                        aria-label="A mug of coffee, in pixels"></canvas>
+
+                <p class="splash-hint" id="splash-hint">Click anywhere to start</p>
+
+                <div class="splash-grid" id="splash-grid" hidden role="group"
+                     aria-label="Choose where to start">
+                    <button type="button" data-mode="extract"  data-icon="extract"><span>Extract</span></button>
+                    <button type="button" data-mode="palettes" data-icon="palette"><span>Palettes</span></button>
+                    <button type="button" data-mode="photo"    data-icon="image"><span>Photo</span></button>
+                    <button type="button" data-mode="video"    data-icon="film"><span>Video</span></button>
+                </div>
+            </div>
         </div>
 
         <!-- Palettes: every palette, listed, with the selected one's
@@ -99,9 +166,9 @@
         <div class="stage-media" data-for="photo">
             <div class="empty-state" id="ph-empty">
                 <button id="ph-pick" class="pick-big" data-file="ph-file" data-icon="image"><span>Upload an image</span></button>
-                <p class="hint">Every change below redraws it as you drag.</p>
+                <p class="hint">Every change below redraws it while dragging.</p>
             </div>
-            <canvas id="ph-canvas" class="media hidden"></canvas>
+            <canvas id="ph-canvas" class="media viewport hidden"></canvas>
         </div>
 
         <!-- Video: the first frame under the current settings — a still, not a
@@ -109,24 +176,206 @@
         <div class="stage-media" data-for="video">
             <div class="empty-state" id="vid-empty">
                 <button id="vid-pick" class="pick-big" data-file="vid-file" data-icon="film"><span>Upload a video</span></button>
-                <p class="hint">The first frame previews your settings before you commit to a render.</p>
+                <p class="hint">The first frame previews the current settings before committing to a render.</p>
             </div>
             <video id="vid-out" class="media hidden" controls playsinline></video>
             <canvas id="vid-canvas" class="media hidden"></canvas>
             <p id="vid-frame-note" class="caption"></p>
         </div>
 
+
+        <!-- Tips: the things that are not discoverable by pressing buttons.
+             Chiefly the desktop gestures, which have no on-screen affordance. -->
+        <div class="sheet" data-for="tips">
+            <section class="block">
+                <h2>Moving around the image</h2>
+                <p class="hint">Zoom matters most with the brush: a block is a few screen pixels
+                    at fit-to-window, and nothing can be aimed at what cannot be seen. The image stays
+                    pixelated at every zoom level — it is the thing being edited, not a preview of it.</p>
+                <dl class="tips">
+                    <dt>Phone</dt>
+                    <dd>Pinch with two fingers to zoom. Drag with two fingers, or with one while
+                        the brush is off, to move around.</dd>
+
+                    <dt>Trackpad</dt>
+                    <dd>Two-finger scroll moves the picture. Pinch to zoom — browsers report a
+                        trackpad pinch as ctrl and the wheel, which is how the two gestures are
+                        told apart.</dd>
+
+                    <dt>Mouse</dt>
+                    <dd>Ctrl and the wheel zooms under the cursor. The wheel on its own scrolls the
+                        picture. Holding the wheel down and pushing away zooms in, pulling back
+                        zooms out.</dd>
+
+                    <dt>Panning</dt>
+                    <dd>Drag with the right button at any time, or with the left button while no
+                        tool is on.</dd>
+
+                    <dt>Getting back</dt>
+                    <dd><strong>Fit</strong> in the tool bar returns to the whole image.</dd>
+                </dl>
+            </section>
+
+            <section class="block">
+                <h2>The brush</h2>
+                <dl class="tips">
+                    <dt>It nudges, it does not paint</dt>
+                    <dd>The brush shifts a block's value before the palette is matched, so what
+                        comes out is always a palette colour. A small nudge on a block far from a
+                        boundary shows nothing — it is still recorded, and it still counts towards
+                        the next one.</dd>
+
+                    <dt>One pass per stroke</dt>
+                    <dd>Going back over ground already covered in the same stroke does nothing.
+                        Lift and press again to apply a second nudge, so the amount never depends on the speed of the drag.</dd>
+
+                    <dt>Reach</dt>
+                    <dd>On a phone a hand covers the thing being edited. Reach moves where
+                        the stroke lands relative to the finger, up to a quarter of the screen
+                        above or below, with a line showing the link. It is a share of the screen
+                        rather than a number of blocks, because a hand covers a fixed area of glass
+                        however far the picture is zoomed.</dd>
+
+                    <dt>Sizes are in blocks</dt>
+                    <dd>A size of 8 covers 8 blocks whatever the zoom, so the brush keeps its meaning at any zoom.</dd>
+
+                    <dt>Undo is unlimited</dt>
+                    <dd>Each stroke is one step. Changing the pixel size clears the brushwork,
+                        because the offsets were placed against a grid that no longer exists.</dd>
+                </dl>
+            </section>
+
+            <section class="block">
+                <h2>Drawing, and the divider</h2>
+                <dl class="tips">
+                    <dt>Brush vs draw</dt>
+                    <dd>The brush nudges a block and lets the palette matcher decide what that
+                        becomes. Draw sets a block outright and takes the matcher out of the loop
+                        for those blocks. Only one can be on at a time.</dd>
+
+                    <dt>The line in a palette strip</dt>
+                    <dd>Colours to the right of it were created for drawing. They are
+                        <strong>never matched to automatically</strong> — a colour mixed for
+                        one detail should not start attracting blocks across the whole image. They are placed by hand or not at all.</dd>
+
+                    <dt>Adding colours in Palettes is different</dt>
+                    <dd>Anything added on the Palettes screen goes before the divider and does take
+                        part in matching. That screen is for building the palette itself.</dd>
+
+                    <dt>The eraser</dt>
+                    <dd>Puts blocks back under the matcher rather than painting over them.</dd>
+                </dl>
+            </section>
+
+            <section class="block">
+                <h2>Smoothing away specks</h2>
+                <dl class="tips">
+                    <dt>Despeckle is the one to reach for</dt>
+                    <dd>A clear sky often comes out with a few stray blocks in it — not clouds,
+                        just blocks whose average landed the other side of a palette boundary.
+                        <strong>Despeckle</strong> takes the median of each block's neighbours: an
+                        isolated speck is a minority in its own neighbourhood so it disappears,
+                        while an edge, with half its neighbours on each side, does not move.</dd>
+
+                    <dt>Soften is a different job</dt>
+                    <dd>A distance-weighted average. It reduces detail everywhere, edges included,
+                        and it smears a speck across its neighbourhood rather than removing it.
+                        Reach for it when losing detail is the point.</dd>
+
+                    <dt>It runs before the palette</dt>
+                    <dd>Which is what makes it work. After matching, every block is already one of
+                        a handful of colours, and averaging those gives colours the palette does
+                        not contain. Before matching, an almost-blue block is pulled the rest of
+                        the way and the matcher does what it would have done anyway.</dd>
+
+                    <dt>Radius costs nothing for Soften</dt>
+                    <dd>It is computed with a sliding window, so radius 20 costs what radius 2
+                        costs. Despeckle is not separable and does grow with radius, which is why
+                        its radius is capped rather than merely discouraged.</dd>
+
+                    <dt>Only part of the picture</dt>
+                    <dd>Set the filter under <strong>Smooth</strong>, leave its strength at 0, then
+                        switch the brush to <strong>Smooth</strong> mode and paint. The filter is applied to the blocks painted and nowhere else, and it is undoable like
+                        any other stroke.</dd>
+                </dl>
+            </section>
+
+            <section class="block">
+                <h2>Cropping</h2>
+                <dl class="tips">
+                    <dt>It is measured in the photo's own pixels</dt>
+                    <dd>Not in blocks. The block grid is recomputed over whatever is selected, so
+                        the Pixel size sliders keep their own numbers and get new limits.</dd>
+
+                    <dt>Moving and resizing</dt>
+                    <dd>Drag anywhere inside the selection to move it. Grab a corner, or the middle
+                        of any side, to resize. With a ratio locked, a corner follows whichever axis
+                        moved further and a side grows about the centre.</dd>
+
+                    <dt>Shape and output size are different things</dt>
+                    <dd>Locking 1:1 says the selection is square. Typing an output size of
+                        1024 x 1024 says the <em>result</em> is that size — so a square can be dragged
+                        anywhere from small to the largest that fits and still land at 1024 x 1024.
+                        Leave the output blank to keep exactly the pixels selected.</dd>
+
+                    <dt>Cropping twice</dt>
+                    <dd>Turning crop back on brings the whole photo back with the last selection
+                        still on it. Crops are always taken from the original, never from a
+                        previous crop, so nothing compounds and the selection can always widen again.</dd>
+
+                    <dt>Undo covers it</dt>
+                    <dd>Moving the selection, resizing it, applying, and going back to the full
+                        image are all steps. Applying does clear the brush and draw history, because
+                        those offsets were placed on a grid that no longer exists.</dd>
+                </dl>
+            </section>
+
+            <section class="block">
+                <h2>Elsewhere</h2>
+                <dl class="tips">
+                    <dt>Video is sampled, not played</dt>
+                    <dd>Every output frame is decoded at its own timestamp, so the result is
+                        exactly as long as the source and never freezes at the end. It takes longer
+                        than real time; that is the trade.</dd>
+
+                    <dt>Palettes stay on the device</dt>
+                    <dd>They live on this device. <strong>Transfer</strong> on the Palettes bar writes a file that moves to another one.</dd>
+                </dl>
+            </section>
+        </div>
+
+        <!-- Legacy: a thank-you. Deliberately in its own orange-and-white
+             livery rather than the current theme — it is about a different app,
+             and it should not look like a screen of this one. -->
+        <div class="sheet legacy" data-for="legacy">
+            <section class="block">
+                <p class="legacy-mark">photo_to_pixels</p>
+                <h2>Thank you</h2>
+                <p>Pixelatte exists because another app got there first.
+                    <strong>photo_to_pixels</strong> was the one that made pixelating a photo feel
+                    like something worth doing rather than a filter to scroll past.</p>
+                <p>It was free. It did not (really) have ads. It worked. Nothing about it begged
+                    for a subscription, a login, or a rating out of five before you were allowed to
+                    use the thing you had just installed. You opened it, it did the job, you
+                    closed it.</p>
+                <p>That is a low bar in description and a rare one in practice, and it is the bar
+                    this app is trying to clear. The offline-by-default, no-account, nothing-leaves-
+                    your-phone shape of Pixelatte is not a privacy stance so much as an attempt to
+                    remember what that felt like.</p>
+                <p class="legacy-sign">So: thanks. This one is built in its shadow.</p>
+            </section>
+        </div>
+
         <!-- Account and Settings are full-stage sheets, not media surfaces. -->
         <div class="sheet" data-for="account">
             <section class="block">
                 <h2>Account</h2>
-                <p class="hint">There is no account to sign in to. Pixelator runs entirely on this
-                    device: your palettes, images and video never leave it, and nothing here needs
+                <p class="hint">There is no account to sign in to. Pixelatte runs entirely on this device: palettes, images and video never leave it, and nothing here needs
                     a server. Maybe this will be implemented when the app launches. Until then, go
                     grab a coffee instead of making accounts everywhere. Cheers! </p>
-                <p class="hint">If syncing palettes between devices is what you came here for, use
-                    <strong>Transfer</strong> on the Palettes bar — it writes a .json file you can
-                    move yourself.</p>
+                <p class="hint">For syncing palettes between devices, use
+                    <strong>Transfer</strong> on the Palettes bar — it writes a .json file that can be
+                    moved manually.</p>
             </section>
         </div>
 
@@ -142,14 +391,25 @@
             </section>
 
             <section class="block">
+                <h2>Colour picking</h2>
+                <p class="hint">Which sliders appear when choosing a colour — adding one to a
+                    palette, or mixing one to draw with.</p>
+                <div class="shape-row two" id="cp-model" role="radiogroup" aria-label="Colour model">
+                    <button type="button" class="shape" data-model="rgb" aria-pressed="true">R G B</button>
+                    <button type="button" class="shape" data-model="hsl" aria-pressed="false">H S L</button>
+                </div>
+                <p class="hint" id="cp-model-note"></p>
+            </section>
+
+            <section class="block">
                 <h2>Activity</h2>
                 <div id="log" class="log"></div>
             </section>
 
             <section class="block">
                 <h2>About</h2>
-                <p class="hint">Pixelator — pixelate photos and video against a palette you
-                    control. Works fully offline.</p>
+                <p class="hint">Pixelatte — pixelate photos and video against a chosen
+                    palette. Works fully offline.</p>
             </section>
         </div>
 
@@ -203,6 +463,13 @@
             <button class="tool" data-pop="pop-ph-palette" data-icon="palette"><span>Palette</span></button>
             <button class="tool" data-pop="pop-ph-blocks"  data-icon="blocks"><span>Pixel size</span></button>
             <button class="tool" data-pop="pop-ph-rgb"     data-icon="rgb"><span>RGB</span></button>
+            <button class="tool" data-pop="pop-ph-brush"   data-icon="brush" id="ph-brush-tool"><span>Brush</span></button>
+            <button class="tool" data-pop="pop-ph-draw"    data-icon="draw" id="ph-draw-tool"><span>Draw</span></button>
+            <button class="tool" data-pop="pop-ph-crop"    data-icon="crop" id="ph-crop-tool"><span>Crop</span></button>
+            <button class="tool" data-pop="pop-ph-smooth"  data-icon="smoothing"><span>Smooth</span></button>
+            <button class="tool" id="ph-undo"              data-icon="undo" disabled><span>Undo</span></button>
+            <button class="tool" id="ph-redo"              data-icon="redo" disabled><span>Redo</span></button>
+            <button class="tool" id="ph-fit"               data-icon="fit"><span>Fit</span></button>
             <button class="tool" data-pop="pop-ph-live"    data-icon="live"><span>Live</span></button>
             <button class="tool primary" id="ph-run"       data-icon="run"><span>Render</span></button>
             <button class="tool" id="ph-save"              data-icon="save" disabled><span>Save PNG</span></button>
@@ -239,7 +506,7 @@
                 so there is no copy elsewhere.</p>
             <div id="pal-delete-swatches" class="swatches"></div>
             <button id="pal-delete-confirm" class="red big">Delete permanently</button>
-            <p class="hint">You will get one chance to undo it.</p>
+            <p class="hint">This can be undone once.</p>
         </div>
 
         <div class="pop" id="pop-pal-add" hidden>
@@ -291,8 +558,7 @@
                     <!-- min is -1, not 0: -1 is the "auto" sentinel, and a range input
                          silently clamps values below its min. 0 means suppression off. -->
                     <input type="range" id="ex-sep" min="-1" max="96" value="-1">
-                    <p class="hint">Without this the top scores are all neighbours of one peak and
-                        you get several shades of the same colour. Leftmost is <em>auto</em>; one
+                    <p class="hint">Without this the top scores are all neighbours of one peak, several shades of the same colour. Leftmost is <em>auto</em>; one
                         notch right is <em>0</em>, which switches suppression off.</p>
                 </div>
             </div>
@@ -318,13 +584,21 @@
                  image's own shape as soon as one is loaded. -->
             <div class="field">
                 <label for="ph-bw">Width <span id="ph-bw-val" class="val">192</span></label>
-                <input type="range" id="ph-bw" min="32" max="1920" value="192">
+                <div class="field-row">
+                    <input type="range" id="ph-bw" min="32" max="1920" value="192">
+                    <input type="number" id="ph-bw-num" class="num" inputmode="numeric"
+                           aria-label="Width in blocks">
+                </div>
             </div>
             <div class="field">
                 <label for="ph-bh">Height <span id="ph-bh-val" class="val">108</span></label>
-                <input type="range" id="ph-bh" min="32" max="1920" value="108">
+                <div class="field-row">
+                    <input type="range" id="ph-bh" min="32" max="1920" value="108">
+                    <input type="number" id="ph-bh-num" class="num" inputmode="numeric"
+                           aria-label="Height in blocks">
+                </div>
             </div>
-            <p class="hint">Aspect ratio is locked: moving one holds the other while you drag.
+            <p class="hint">Aspect ratio is locked: moving one holds the other while dragging.
                 The limits come from the image itself — from 32 blocks on its shorter side up to
                 1920 on the longer one and 1080 on the shorter, and never more blocks than the
                 source has pixels.</p>
@@ -346,10 +620,188 @@
             </div>
         </div>
 
+        <div class="pop" id="pop-ph-brush" hidden>
+            <!-- Pinned, like the crop switch: it is what makes the rest of this
+                 panel do anything, and it should not scroll out of reach behind
+                 the sliders it governs. -->
+            <div class="pop-sticky">
+                <h3>Brush</h3>
+                <label class="check"><input type="checkbox" id="ph-brush-on"> Brush on</label>
+            </div>
+            <p class="hint">While the brush is on, dragging on the image paints. With it off,
+                dragging pans instead.</p>
+
+            <div class="shape-row" id="ph-brush-shapes" role="radiogroup" aria-label="Brush shape">
+                <button type="button" class="shape" data-shape="circle" aria-pressed="true">Circle</button>
+                <button type="button" class="shape" data-shape="square" aria-pressed="false">Square</button>
+                <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
+                <button type="button" class="shape" data-shape="vline" aria-pressed="false">Column</button>
+            </div>
+
+            <div class="field">
+                <label for="ph-brush-size">Size <span id="ph-brush-size-val" class="val">3</span></label>
+                <input type="range" id="ph-brush-size" min="1" max="64" value="3">
+            </div>
+
+            <h3>What it changes</h3>
+            <div id="ph-brush-rgb">
+            <div class="field">
+                <label for="ph-brush-r">Red <span id="ph-brush-r-val" class="val r">0</span></label>
+                <input type="range" id="ph-brush-r" min="-16" max="16" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-brush-g">Green <span id="ph-brush-g-val" class="val g">0</span></label>
+                <input type="range" id="ph-brush-g" min="-16" max="16" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-brush-b">Blue <span id="ph-brush-b-val" class="val b">0</span></label>
+                <input type="range" id="ph-brush-b" min="-16" max="16" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-tool-offset">Reach <span id="ph-tool-offset-val" class="val">0</span></label>
+                <input type="range" id="ph-tool-offset" min="-25" max="25" value="0">
+            </div>
+            <p class="hint">Moves where the stroke lands relative to the finger, as a percentage
+                of the screen height, so a hand is not sitting on top of the edit. Negative puts
+                the stroke above the finger, positive below. A line shows the link while it is
+                set. Applies to drawing too.</p>
+
+            </div>
+            <p class="hint">The brush nudges a block's value before it is matched to the palette,
+                so the result always stays in the palette. A nudge that is not enough to push a
+                block onto its neighbouring colour shows no change — it is still recorded, and it
+                still counts towards the next one. One pass over the same block per stroke,
+                whatever the speed of the drag.</p>
+            <button id="ph-brush-clear" class="yellow">Clear all brushwork</button>
+        </div>
+
+        <div class="pop" id="pop-ph-draw" hidden>
+            <h3>Draw</h3>
+            <label class="check"><input type="checkbox" id="ph-draw-on"> Draw on</label>
+            <p class="hint">Drawing sets a block to a colour outright — the palette matcher does
+                not get a say on those blocks. Turning the brush on turns this off; they cannot
+                both own the pointer.</p>
+
+            <h3>Colour</h3>
+            <div id="ph-draw-swatches" class="swatches draw-swatches"></div>
+            <p class="hint" id="ph-draw-current">No colour chosen.</p>
+
+            <div class="shape-row two">
+                <button type="button" class="shape" id="ph-draw-erase">Eraser</button>
+                <button type="button" class="shape" id="ph-draw-new">Create colour…</button>
+            </div>
+
+            <div id="ph-draw-create" class="hidden">
+                <div id="ph-draw-picker"></div>
+                <button id="ph-draw-add" class="green">Add to palette and use</button>
+                <p class="hint">It joins this palette after the divider, so it is available to
+                    draw with but never matched to automatically.</p>
+            </div>
+
+            <div class="shape-row" id="ph-draw-shapes" role="radiogroup" aria-label="Draw shape">
+                <button type="button" class="shape" data-shape="square" aria-pressed="true">Square</button>
+                <button type="button" class="shape" data-shape="circle" aria-pressed="false">Circle</button>
+                <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
+                <button type="button" class="shape" data-shape="vline" aria-pressed="false">Column</button>
+            </div>
+            <div class="field">
+                <label for="ph-draw-size">Size <span id="ph-draw-size-val" class="val">1</span></label>
+                <input type="range" id="ph-draw-size" min="1" max="64" value="1">
+            </div>
+            <button id="ph-draw-clear" class="yellow">Clear all drawing</button>
+        </div>
+
+        <div class="pop" id="pop-ph-crop" hidden>
+            <!-- Pinned: this is the switch that makes every other control here
+                 do anything, and scrolling down to the output size should not
+                 hide the thing that turns the tool on. -->
+            <div class="pop-sticky">
+                <h3>Crop <span id="ph-crop-size" class="badge"></span></h3>
+                <label class="check"><input type="checkbox" id="ph-crop-on"> Crop on</label>
+            </div>
+            <p class="hint">Drag inside to move, or grab a corner or the middle of a side to
+                resize. Measured in pixels of the original photo — the block grid is recomputed
+                over whatever is selected.</p>
+
+            <h3>Shape</h3>
+            <div class="ratio-row" id="ph-crop-presets">
+                <button type="button" class="shape" data-ratio="free" aria-pressed="true">Free</button>
+                <button type="button" class="shape" data-ratio="1:1">1:1</button>
+                <button type="button" class="shape" data-ratio="4:3">4:3</button>
+                <button type="button" class="shape" data-ratio="3:2">3:2</button>
+                <button type="button" class="shape" data-ratio="16:9">16:9</button>
+                <button type="button" class="shape" data-ratio="9:16">9:16</button>
+            </div>
+            <div class="field-row">
+                <input type="text" id="ph-crop-ratio" class="num wide" spellcheck="false"
+                       placeholder="16:9" aria-label="Aspect ratio">
+                <button type="button" id="ph-crop-lock" class="shape">Lock</button>
+            </div>
+            <p class="hint" id="ph-crop-ratio-note"></p>
+
+            <h3>Output size</h3>
+            <div class="field-row">
+                <input type="number" id="ph-crop-ow" class="num" min="1" inputmode="numeric"
+                       placeholder="auto" aria-label="Output width in pixels">
+                <span class="by">x</span>
+                <input type="number" id="ph-crop-oh" class="num" min="1" inputmode="numeric"
+                       placeholder="auto" aria-label="Output height in pixels">
+            </div>
+            <p class="hint">Leave blank to keep exactly the pixels selected. Set both and the selection is resampled to that size, whatever was dragged — so a locked 1:1 at
+                3024x3024 still comes out at the size requested. Typing a size also locks the
+                shape to its ratio.</p>
+
+            <button id="ph-crop-apply" class="green big">Apply crop</button>
+            <button id="ph-crop-reset" class="yellow">Back to the full image</button>
+        </div>
+
+        <div class="pop" id="pop-ph-smooth" hidden>
+            <h3>Smoothing</h3>
+            <h3>Spatial</h3>
+            <p class="hint">Blocks are pulled towards their neighbours before the palette is
+                matched, which is what removes stray specks — one white block in an otherwise clean
+                sky, not a cloud. Runs on the block grid, so it costs the same whatever the video's
+                resolution.</p>
+            <div class="shape-row two" id="ph-smode" role="radiogroup" aria-label="Spatial filter">
+                <button type="button" class="shape" data-smode="despeckle" aria-pressed="true">Despeckle</button>
+                <button type="button" class="shape" data-smode="soften" aria-pressed="false">Soften</button>
+            </div>
+            <p class="hint" id="ph-smode-note"></p>
+            <div class="field">
+                <label for="ph-sradius">Radius <span id="ph-sradius-val" class="val">0</span></label>
+                <input type="range" id="ph-sradius" min="0" max="20" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-sstrength">Strength <span id="ph-sstrength-val" class="val">100</span>%</label>
+                <input type="range" id="ph-sstrength" min="0" max="100" value="100">
+            </div>
+            <p class="hint">Strength sets how much of the filter is applied to the
+                <strong>whole picture</strong>. Leave it at 0 to change nothing globally.</p>
+
+            <h3>Smooth by hand</h3>
+            <label class="check"><input type="checkbox" id="ph-smooth-brush-on">
+                Paint the filter on</label>
+            <p class="hint">Turn this on and drag on the picture to apply the filter above to
+                just the blocks it touches, at full strength, however the global strength is set.
+                This is its own brush — it does not use the Brush tool and nothing needs to be
+                combined. Undo covers each stroke.</p>
+            <div class="shape-row" id="ph-smooth-shapes" role="radiogroup" aria-label="Smoothing brush shape">
+                <button type="button" class="shape" data-shape="circle" aria-pressed="true">Circle</button>
+                <button type="button" class="shape" data-shape="square" aria-pressed="false">Square</button>
+                <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
+                <button type="button" class="shape" data-shape="vline" aria-pressed="false">Column</button>
+            </div>
+            <div class="field">
+                <label for="ph-smooth-size">Size <span id="ph-smooth-size-val" class="val">8</span></label>
+                <input type="range" id="ph-smooth-size" min="1" max="64" value="8">
+            </div>
+            <button id="ph-smooth-clear" class="yellow">Clear painted smoothing</button>
+        </div>
+
         <div class="pop" id="pop-ph-live" hidden>
             <h3>Live preview</h3>
-            <label class="check"><input type="checkbox" id="ph-live" checked> Re-render as I drag</label>
-            <p class="hint">Turn off on a slow device, then use Render when you are ready.</p>
+            <label class="check"><input type="checkbox" id="ph-live" checked> Re-render during dragging</label>
+            <p class="hint">Turn off on a slow device, then use Render when ready.</p>
         </div>
 
         <!-- ---- video ---- -->
@@ -375,13 +827,21 @@
                  clip's own shape as soon as one is loaded. -->
             <div class="field">
                 <label for="vid-bw">Width <span id="vid-bw-val" class="val">192</span></label>
-                <input type="range" id="vid-bw" min="32" max="1920" value="192">
+                <div class="field-row">
+                    <input type="range" id="vid-bw" min="32" max="1920" value="192">
+                    <input type="number" id="vid-bw-num" class="num" inputmode="numeric"
+                           aria-label="Width in blocks">
+                </div>
             </div>
             <div class="field">
                 <label for="vid-bh">Height <span id="vid-bh-val" class="val">108</span></label>
-                <input type="range" id="vid-bh" min="32" max="1920" value="108">
+                <div class="field-row">
+                    <input type="range" id="vid-bh" min="32" max="1920" value="108">
+                    <input type="number" id="vid-bh-num" class="num" inputmode="numeric"
+                           aria-label="Height in blocks">
+                </div>
             </div>
-            <p class="hint">Aspect ratio is locked: moving one holds the other while you drag.
+            <p class="hint">Aspect ratio is locked: moving one holds the other while dragging.
                 The limits come from the clip itself — from 32 blocks on its shorter side up to
                 1920 on the longer one and 1080 on the shorter. Large grids cost memory and time
                 on video.</p>
@@ -408,6 +868,25 @@
             <input type="range" id="vid-smooth" min="0" max="99" value="0">
             <p class="hint">Temporal blend across frames, so it changes the render rather than the
                 still above: s<sub>t</sub> = (1−α)·c<sub>t</sub> + α·s<sub>t−1</sub>.</p>
+
+            <h3>Spatial</h3>
+            <p class="hint">Blocks are pulled towards their neighbours before the palette is
+                matched, which is what removes stray specks — one white block in an otherwise clean
+                sky, not a cloud. Runs on the block grid, so it costs the same whatever the video's
+                resolution.</p>
+            <div class="shape-row two" id="vid-smode" role="radiogroup" aria-label="Spatial filter">
+                <button type="button" class="shape" data-smode="despeckle" aria-pressed="true">Despeckle</button>
+                <button type="button" class="shape" data-smode="soften" aria-pressed="false">Soften</button>
+            </div>
+            <p class="hint" id="vid-smode-note"></p>
+            <div class="field">
+                <label for="vid-sradius">Radius <span id="vid-sradius-val" class="val">0</span></label>
+                <input type="range" id="vid-sradius" min="0" max="20" value="0">
+            </div>
+            <div class="field">
+                <label for="vid-sstrength">Strength <span id="vid-sstrength-val" class="val">100</span>%</label>
+                <input type="range" id="vid-sstrength" min="0" max="100" value="100">
+            </div>
         </div>
 
         <div class="pop" id="pop-vid-encoder" hidden>
@@ -428,5 +907,26 @@
 </div>
 
 <script type="module" src="js/app.js"></script>
+<script>
+// Watchdog. A module script that fails to parse, or an import that 404s, runs
+// nothing at all — no handler fires and the page just sits there. This is the
+// only thing that still runs in that case, so it is the only thing that can say
+// so. app.js sets data-booted when it has run; if that has not happened a few
+// seconds in, the scripts never arrived.
+setTimeout(function () {
+    if (document.documentElement.dataset.booted === '1') return;
+    var el = document.createElement('div');
+    el.className = 'boot-failure';
+    el.innerHTML = '<div class="boot-failure-panel" role="alert">'
+        + '<h3>Pixelatte did not load</h3>'
+        + '<p>The app\'s scripts did not run. That normally means a stale copy is '
+        + 'cached, or a file is missing from the server.</p>'
+        + '<p><b>Try a hard reload:</b> Ctrl+Shift+R, or Cmd+Shift+R on a Mac.</p>'
+        + '<p>If that does not help, open the developer console (F12) — the first '
+        + 'red line names the file that failed.</p>'
+        + '</div>';
+    document.body.appendChild(el);
+}, 5000);
+</script>
 </body>
 </html>

@@ -257,10 +257,13 @@ export function blockHeight(bw, w, h) {
  * stage of the video path when no GPU backend is available.
  * @returns {{rgb: Uint8ClampedArray, bw: number, bh: number}} block-res result
  */
-export function processStill(rgba, w, h, { bw, bh, offsets, palette, lut }) {
+export function processStill(rgba, w, h, { bw, bh, offsets, palette, lut, smooth }) {
     const outH = bh || blockHeight(bw, w, h);
     applyOffsets(rgba, offsets);
-    const small = boxDownsample(rgba, w, h, bw, outH);
+    let small = boxDownsample(rgba, w, h, bw, outH);
+    // Optional, and injected rather than imported, so core.js keeps its one job
+    // and the landing page's demo does not pull in a filter it never uses.
+    if (smooth?.apply) small = smooth.apply(small, bw, outH);
     const mapped = lut ? mapToPalette(small, lut) : mapToPaletteExact(small, palette);
     return { rgb: mapped, bw, bh: outH };
 }

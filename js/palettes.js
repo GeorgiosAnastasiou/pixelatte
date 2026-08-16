@@ -23,6 +23,15 @@ const log = makeLogger('pal-log');
 const UNDO_MS = 12000;
 
 let palettes = {};
+/**
+ * Per palette, how many of its last colours were mixed by hand.
+ *
+ * A palette extracted from a picture says something about that picture. A
+ * colour you added afterwards does not, and the strip draws a divider so the
+ * two are never confused for one another. Hand-added colours are always
+ * appended, so a single count is enough to locate the boundary.
+ */
+let addedCounts = {};
 let selected = null;
 let removeMode = false;
 let picker = null;
@@ -42,7 +51,31 @@ const notifySelection = () => selectionListeners.forEach((fn) => fn(selected));
 
 export const getPalettes = () => palettes;
 export const getSelected = () => selected;
-export const getPaletteRgb = (name) => (palettes[name] || []).map(hexToRgb).filter(Boolean);
+/** How many trailing colours of a palette were added by hand. */
+export const getAddedCount = (name) => addedCounts[name] || 0;
+/**
+ * The colours pixelation is allowed to match against — everything before the
+ * divider.
+ *
+ * A colour mixed to draw one detail must not become a target for the whole
+ * image: add a bright pink for a sign and every warm block in the frame starts
+ * drifting towards it. Drawing places a colour deliberately, on the blocks you
+ * choose; matching would place it everywhere you did not.
+ *
+ * The exception is a palette with nothing before the divider. A palette built
+ * entirely by hand is still a palette, and excluding all of it would leave
+ * nothing to match and render a blank frame.
+ */
+export function matchableHexes(name) {
+    const colors = palettes[name] || [];
+    const boundary = colors.length - (addedCounts[name] || 0);
+    return boundary > 0 ? colors.slice(0, boundary) : colors;
+}
+
+export const getPaletteRgb = (name) => matchableHexes(name).map(hexToRgb).filter(Boolean);
+
+/** Every colour, including draw-only ones. What the draw tool offers. */
+export const getPaletteHexes = (name) => (palettes[name] || []).slice();
 
 /**
  * Add a palette from elsewhere (the Extract screen). Names are made unique
@@ -66,7 +99,39 @@ export function addPalette(name, hexes) {
 
 function persist() {
     if (!store.save(palettes)) log('Could not save — storage is full or blocked.', 'err');
+    // Drop counts for palettes that no longer exist, and never let a count
+    // exceed the palette it describes.
+    for (const name of Object.keys(addedCounts)) {
+        if (!(name in palettes)) delete addedCounts[name];
+        else addedCounts[name] = Math.min(addedCounts[name], palettes[name].length);
+    }
+    store.saveAdded(addedCounts);
     notify();
+}
+
+/**
+ * Append a colour and record that it did not come from a picture.
+ *
+ * Used by the draw tool, which needs somewhere to put a colour you mixed on the
+ * spot. Returns false if the palette already had it — the same colour twice
+ * would be two entries mapping to one, which is only a way to confuse yourself.
+ */
+export function addHandColor(name, hex) {
+    const target = (hex || '').toUpperCase();
+    if (!palettes[name] || !/^#[0-9A-F]{6}$/.test(target)) return false;
+    if (palettes[name].includes(target)) return false;
+    palettes[name].push(target);
+    addedCounts[name] = (addedCounts[name] || 0) + 1;
+    persist();
+    render();
+    notifySelection();
+    return true;
+}
+
+/** Keep the hand-added count honest when a colour is removed by index. */
+function forgetAt(name, index) {
+    const n = addedCounts[name] || 0;
+    if (n > 0 && index >= palettes[name].length - n) addedCounts[name] = n - 1;
 }
 
 /* ------------------------------------------------------------------ undo */
@@ -76,6 +141,7 @@ function offerUndo(label) {
     undoState = {
         label,
         palettes: JSON.parse(JSON.stringify(palettes)),
+        added: { ...addedCounts },
         selected,
     };
     $('pal-undo-text').textContent = label;
@@ -93,8 +159,9 @@ function dismissUndo() {
 
 function undo() {
     if (!undoState) return;
-    const { label, palettes: snapshot, selected: was } = undoState;
+    const { label, palettes: snapshot, added: addedSnapshot, selected: was } = undoState;
     palettes = snapshot;
+    addedCounts = { ...addedSnapshot };
     dismissUndo();
     persist();
     select(was && palettes[was] ? was : Object.keys(palettes)[0] ?? null);
@@ -112,12 +179,51 @@ function select(name) {
 
 /* ------------------------------------------------------------- rendering */
 
-function swatchStrip(colors) {
+/**
+ * Display order for a palette: picture colours, a divider, then hand-added.
+ *
+ * Returns positions in the *original* array, never the sorted one. Everything
+ * that draws a palette also has to be able to say which entry a swatch is, and
+ * removing "the third one on screen" would otherwise delete whichever colour
+ * happened to sort into that slot.
+ */
+function orderedSwatches(colors, added = 0) {
+    const boundary = Math.max(0, colors.length - added);
+    const out = [];
+    const group = (from, to) => {
+        const slice = colors.slice(from, to);
+        for (const i of proximityOrder(slice)) out.push({ index: from + i });
+    };
+    group(0, boundary);
+    if (added > 0 && boundary > 0) out.push({ divider: true });
+    group(boundary, colors.length);
+    return out;
+}
+
+function dividerEl(className) {
+    const el = document.createElement('i');
+    el.className = className;
+    el.title = 'Colours to the right were mixed by hand, not taken from a picture';
+    return el;
+}
+
+/**
+ * A palette's face: colours from the picture, then a divider, then the ones
+ * added by hand.
+ *
+ * Each group is ordered by proximity within itself rather than the whole strip
+ * being sorted, because the divider has to stay at the boundary to mean
+ * anything. The strip keeps a fixed width whatever it holds — the swatches get
+ * narrower as colours are added instead of the strip getting longer, so a
+ * palette occupies the same space in a list however large it grows.
+ */
+function swatchStrip(colors, added = 0) {
     const wrap = document.createElement('div');
     wrap.className = 'strip';
-    for (const i of proximityOrder(colors)) {
+    for (const item of orderedSwatches(colors, added)) {
+        if (item.divider) { wrap.appendChild(dividerEl('strip-div')); continue; }
         const s = document.createElement('span');
-        s.style.background = colors[i];
+        s.style.background = colors[item.index];
         wrap.appendChild(s);
     }
     return wrap;
@@ -170,7 +276,7 @@ function paletteRow(name) {
     count.className = 'pal-row-count';
     count.textContent = String(colors.length);
 
-    row.append(swatchStrip(colors), label, count);
+    row.append(swatchStrip(colors, addedCounts[name] || 0), label, count);
     row.addEventListener('click', () => select(name));
     return row;
 }
@@ -194,7 +300,9 @@ function renderSwatches() {
     // Sorted for display, but each swatch remembers the entry it came from, so
     // removing one removes the colour under the finger rather than whichever
     // colour happened to sort into that slot.
-    for (const index of proximityOrder(colors)) {
+    for (const item of orderedSwatches(colors, addedCounts[selected] || 0)) {
+        if (item.divider) { wrap.appendChild(dividerEl('swatch-div')); continue; }
+        const index = item.index;
         const color = colors[index];
         const sw = document.createElement('div');
         sw.className = 'swatch';
@@ -210,6 +318,7 @@ function renderSwatches() {
                 // Snapshot before the edit, so Undo restores this exact colour
                 // at this exact position rather than appending it at the end.
                 offerUndo(`Removed ${color}`);
+                forgetAt(selected, index);
                 palettes[selected].splice(index, 1);
                 persist();
                 render();
@@ -234,10 +343,11 @@ function renderDeletePanel() {
 
     const wrap = $('pal-delete-swatches');
     wrap.innerHTML = '';
-    for (const i of proximityOrder(colors)) {
+    for (const el of orderedSwatches(colors, addedCounts[selected] || 0)) {
+        if (el.divider) { wrap.appendChild(dividerEl('swatch-div')); continue; }
         const sw = document.createElement('div');
         sw.className = 'swatch';
-        sw.style.background = colors[i];
+        sw.style.background = colors[el.index];
         wrap.appendChild(sw);
     }
 
@@ -264,6 +374,7 @@ function setRemoveMode(on) {
 export function init() {
     picker = createColorPicker($('pal-picker-mount'), { initial: '#FF0000' });
     palettes = store.load();
+    addedCounts = store.loadAdded();
     selected = Object.keys(palettes)[0] ?? null;
     render();
     notify();
@@ -290,6 +401,10 @@ export function init() {
         // Rebuild in order so the renamed palette keeps its place in the list.
         palettes = Object.fromEntries(
             Object.entries(palettes).map(([k, v]) => (k === old ? [name, v] : [k, v])));
+        if (addedCounts[old] !== undefined) {
+            addedCounts[name] = addedCounts[old];
+            delete addedCounts[old];
+        }
         persist();
         select(name);
         log(`Renamed "${old}" to "${name}".`);
@@ -315,7 +430,9 @@ export function init() {
         if (!selected) return;
         const color = (picker ? picker.getHex() : '#FF0000').toUpperCase();
         if (palettes[selected].includes(color)) { log(`${color} is already in this palette.`); return; }
-        palettes[selected].push(color);
+        // Added on the palette editor, so it is part of the palette proper and
+        // matching may use it. Only the draw tool adds draw-only colours.
+        palettes[selected].splice(palettes[selected].length - (addedCounts[selected] || 0), 0, color);
         persist();
         render();
         notifySelection();
@@ -331,7 +448,11 @@ export function init() {
             if (!c.startsWith('#')) c = '#' + c;
             c = c.toUpperCase();
             if (!/^#[0-9A-F]{6}$/.test(c)) { bad++; continue; }
-            if (!palettes[selected].includes(c)) { palettes[selected].push(c); added++; }
+            if (!palettes[selected].includes(c)) {
+                // Before the divider: pasted lists are palette building, not drawing.
+                palettes[selected].splice(palettes[selected].length - (addedCounts[selected] || 0), 0, c);
+                added++;
+            }
         }
         persist();
         render();
@@ -342,7 +463,7 @@ export function init() {
 
     // --- export / import ---
     $('pal-export').addEventListener('click', async () => {
-        const blob = new Blob([store.toJSON(palettes)], { type: 'application/json' });
+        const blob = new Blob([store.toJSON(palettes, addedCounts)], { type: 'application/json' });
         const name = `pixelator-palettes-${new Date().toISOString().slice(0, 10)}.json`;
         try {
             const where = await saveBlob(blob, name);
@@ -357,10 +478,12 @@ export function init() {
         const file = e.target.files[0];
         if (!file) return;
         try {
-            const { merged, added, renamed } = store.mergeImported(palettes, await file.text());
+            const { merged, added, renamed, mergedAdded } =
+                store.mergeImported(palettes, await file.text(), addedCounts);
             // An import can bring in a lot at once; make it reversible too.
             offerUndo(`Imported ${added} palette${added === 1 ? '' : 's'}`);
             palettes = merged;
+            addedCounts = mergedAdded;
             persist();
             render();
             log(`Imported ${added} palette${added === 1 ? '' : 's'}.` +

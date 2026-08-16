@@ -2,6 +2,7 @@
 
 import { THEMES, apply, save, getPreference, resolve, watchSystem } from './theme.js';
 import { $ } from './ui.js';
+import { getColorModel, setColorModel } from './colorpicker.js';
 
 function card(theme, activeId, onPick) {
     const el = document.createElement('button');
@@ -58,6 +59,26 @@ export function init() {
     };
 
     $('theme-system').addEventListener('click', () => { save('system'); render(); });
+
+    // --- colour model ---
+    const NOTES = {
+        rgb: 'Red, green and blue, 0 to 255 — the same axes the palette matcher and the '
+           + 'brush work in, so a slider here moves what they move.',
+        hsl: 'Hue, saturation and lightness. Better for hunting a colour with no name yet, '
+           + 'because sweeping hue at a fixed lightness has no RGB equivalent.',
+    };
+    const modelRow = $('cp-model');
+    const paintModel = () => {
+        const active = getColorModel();
+        for (const btn of modelRow.querySelectorAll('.shape')) {
+            btn.setAttribute('aria-pressed', String(btn.dataset.model === active));
+        }
+        $('cp-model-note').textContent = NOTES[active] ?? '';
+    };
+    for (const btn of modelRow.querySelectorAll('.shape')) {
+        btn.addEventListener('click', () => { setColorModel(btn.dataset.model); paintModel(); });
+    }
+    paintModel();
 
     apply(getPreference());
     render();

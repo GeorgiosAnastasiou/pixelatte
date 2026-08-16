@@ -5,6 +5,7 @@
 // the nearest-colour search changes, this changes with it.
 
 import { processStill, blockHeight, hexToRgb } from '../app/js/core.js';
+import { paintLogo } from '../app/js/logo.js';
 
 const SRC_W = 720;
 const SRC_H = 460;
@@ -171,3 +172,8 @@ if (document.readyState === 'loading') {
 } else {
     main();
 }
+
+
+// The mark, from the same module the app uses — one drawing, two places.
+const siteLogo = document.getElementById('site-logo');
+if (siteLogo) paintLogo(siteLogo, 5);

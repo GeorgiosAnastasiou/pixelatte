@@ -19,6 +19,87 @@
 
 const bridge = () => (typeof window === 'undefined' ? undefined : window.Capacitor);
 
+/**
+ * The in-app browsers that open when you tap a link inside a social app.
+ *
+ * They are WebViews with no download manager attached, so the anchor trick
+ * fails exactly as it does inside our own Android shell — the click is
+ * accepted, no error is raised, and no file appears. Detecting them is the only
+ * way to offer something that does work before the user concludes the app is
+ * broken.
+ */
+const IN_APP_UA = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Line\/|TikTok|musical_ly|Snapchat|Pinterest|Twitter/i;
+
+export const isInAppBrowser = () =>
+    typeof navigator !== 'undefined' && IN_APP_UA.test(navigator.userAgent || '');
+
+/**
+ * Hand the file to the system share sheet.
+ *
+ * This is the one route that usually survives an in-app browser: "Save to
+ * Photos" or "Save to Files" is a share target, so the WebView never has to
+ * download anything itself.
+ */
+async function shareBlob(blob, filename) {
+    if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) return false;
+    const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+    if (!navigator.canShare({ files: [file] })) return false;
+    try {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+    } catch (err) {
+        // A cancelled sheet is a decision, not a failure, and must not fall
+        // through to a second attempt the user did not ask for.
+        if (err && err.name === 'AbortError') return true;
+        return false;
+    }
+}
+
+/**
+ * Last resort: show the result and let the browser's own image handling save it.
+ *
+ * Long-press to save works in every in-app browser precisely because it is not
+ * a download — it is the same gesture that saves any picture on any page.
+ * Only images can be rescued this way; a video or a JSON file has no equivalent,
+ * so those get told plainly to open the page in a real browser.
+ */
+function showFallback(blob, filename) {
+    const isImage = (blob.type || '').startsWith('image/');
+    const url = URL.createObjectURL(blob);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'save-fallback';
+    wrap.innerHTML = `
+      <div class="save-fallback-panel" role="dialog" aria-modal="true" aria-label="Save this file">
+        <h3>Saving is blocked here</h3>
+        <p>This page is open inside another app's browser, which has no downloads.</p>
+        ${isImage
+            ? '<p><strong>Press and hold the picture below</strong>, then choose Save image.</p>'
+            : '<p>Open this page in Chrome, Safari or Firefox and save it from there.</p>'}
+        ${isImage ? `<img src="${url}" alt="${filename}">` : ''}
+        <button type="button" class="green" data-act="copy">Copy the page link</button>
+        <button type="button" class="ghost" data-act="close">Close</button>
+      </div>`;
+
+    const close = () => {
+        wrap.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    };
+    wrap.addEventListener('click', async (e) => {
+        const act = e.target?.dataset?.act;
+        if (act === 'close' || e.target === wrap) { close(); return; }
+        if (act === 'copy') {
+            try {
+                await navigator.clipboard.writeText(location.href);
+                e.target.textContent = 'Link copied';
+            } catch {
+                e.target.textContent = location.href;
+            }
+        }
+    });
+    document.body.appendChild(wrap);
+}
+
 /** True inside the Android/iOS shell, false in any browser. */
 export const isNative = () => Boolean(bridge()?.isNativePlatform?.());
 
@@ -105,6 +186,16 @@ export async function saveBlob(blob, filename) {
     if (isNative()) {
         const where = await saveNative(blob, filename);
         return `Saved to ${where}`;
+    }
+
+    // Inside a social app's browser the anchor silently does nothing, so try
+    // the share sheet first and show the long-press panel if that is refused
+    // too. In an ordinary browser the anchor works and is far less intrusive
+    // than a share sheet nobody asked for, so it stays the default there.
+    if (isInAppBrowser()) {
+        if (await shareBlob(blob, filename)) return `Shared ${filename}.`;
+        showFallback(blob, filename);
+        return 'Downloads are blocked in this browser — see the panel for how to save.';
     }
 
     saveViaAnchor(blob, filename);

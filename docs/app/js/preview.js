@@ -5,6 +5,7 @@
 // get there, so it lives here once.
 
 import { processStill } from './core.js';
+import { spatialSmooth } from './smooth.js';
 
 /**
  * Draw block-resolution RGB triplets into a canvas at full size.
@@ -33,10 +34,17 @@ export function paintBlocks(canvas, rgb, bw, bh, outW, outH) {
  * Pixelate one ImageData against a palette and show the result.
  * @returns {{bw:number, bh:number}} the block grid actually used
  */
-export function renderStill(canvas, imgData, { bw, bh, offsets, palette, lut }) {
+export function renderStill(canvas, imgData, { bw, bh, offsets, palette, lut, smooth }) {
     // Copy: processStill applies offsets in place and must not damage the source.
     const rgba = new Uint8ClampedArray(imgData.data);
-    const r = processStill(rgba, imgData.width, imgData.height, { bw, bh, offsets, palette, lut });
+    // Passed as a function rather than as settings, so core.js keeps its single
+    // job and the landing page's demo — which imports core.js directly — does
+    // not drag in a filter it never uses.
+    const apply = smooth && smooth.radius >= 1
+        ? { apply: (rgb, w, h) => spatialSmooth(rgb, w, h, smooth) }
+        : null;
+    const r = processStill(rgba, imgData.width, imgData.height,
+        { bw, bh, offsets, palette, lut, smooth: apply });
     paintBlocks(canvas, r.rgb, r.bw, r.bh, imgData.width, imgData.height);
     return { bw: r.bw, bh: r.bh };
 }

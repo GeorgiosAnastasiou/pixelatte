@@ -8,6 +8,15 @@
 const KEY = 'pixelator-palettes';
 const LEGACY_KEY = 'video-pixelator-palettes';   // the original pixelator.html key
 const VERSION_KEY = 'pixelator-defaults-version';
+/**
+ * How many trailing colours of each palette were added by hand.
+ *
+ * Kept beside the palettes rather than inside them so the main store stays the
+ * plain { name: ["#RRGGBB", ...] } shape that anything can read. A colour you
+ * mixed yourself is not one the picture suggested, and the strip says so with a
+ * divider — but that is a fact *about* the palette, not one of its colours.
+ */
+const ADDED_KEY = 'pixelator-palette-added';
 
 /**
  * Bump this when palettes are added below, and stamp the new entries with it.
@@ -29,14 +38,6 @@ const DEFAULTS_VERSION = 3;
  * one looks off against the original, trust the original.
  */
 const CATALOGUE = [
-    // --- hardware, exact ---
-    { name: 'Gameboy', since: 1, colors: ['#0F380F', '#306230', '#8BAC0F', '#9BBC0F'] },
-    { name: 'Grayscale', since: 1, colors: ['#000000', '#555555', '#AAAAAA', '#FFFFFF'] },
-    { name: 'CGA', since: 1, colors: ['#000000', '#55FFFF', '#FF55FF', '#FFFFFF'] },
-    {
-        name: '1-bit', since: 2,
-        colors: ['#000000', '#FFFFFF'],
-    },
     {
         name: 'Commodore 64', since: 2,
         colors: [
@@ -61,8 +62,6 @@ const CATALOGUE = [
             '#29ADFF', '#83769C', '#FF77A8', '#FFCCAA',
         ],
     },
-
-    // --- editor schemes ---
     {
         name: 'Gruvbox', since: 2,
         colors: [
@@ -94,7 +93,6 @@ const CATALOGUE = [
             '#EB6F92', '#F6C177', '#EBBCBA', '#31748F', '#9CCFD8', '#C4A7E7',
         ],
     },
-    // --- authored for this app ---
     {
         name: 'Blue Haze', since: 3,
         colors: [
@@ -134,6 +132,17 @@ const CATALOGUE = [
             '#DCD7BA', '#C8C093', '#7E9CD8', '#957FB8', '#FF5D62', '#E82424',
             '#98BB6C', '#7AA89F', '#FFA066', '#E6C384',
         ],
+    },
+
+    // The hardware palettes last. They are the most restrictive thing here —
+    // four colours, or two — so they are what you reach for deliberately rather
+    // than what should greet you at the top of the list.
+    { name: 'Gameboy', since: 1, colors: ['#0F380F', '#306230', '#8BAC0F', '#9BBC0F'] },
+    { name: 'Grayscale', since: 1, colors: ['#000000', '#555555', '#AAAAAA', '#FFFFFF'] },
+    { name: 'CGA', since: 1, colors: ['#000000', '#55FFFF', '#FF55FF', '#FFFFFF'] },
+    {
+        name: '1-bit', since: 2,
+        colors: ['#000000', '#FFFFFF'],
     },
 ];
 
@@ -196,6 +205,25 @@ function addNewDefaults(palettes) {
 }
 
 
+/**
+ * Yours first, then the shipped ones in catalogue order.
+ *
+ * The stored object keeps insertion order, so a store written by an older
+ * version has the old arrangement baked into it. Reordering on load is what
+ * lets the shipped list be rearranged without asking anyone to reset anything.
+ */
+function inCatalogueOrder(palettes) {
+    const rank = new Map(CATALOGUE.map((e, i) => [e.name, i]));
+    const names = Object.keys(palettes);
+    const mine = names.filter((n) => !rank.has(n));
+    const shipped = names.filter((n) => rank.has(n)).sort((a, b) => rank.get(a) - rank.get(b));
+
+    const out = {};
+    for (const n of mine) out[n] = palettes[n];
+    for (const n of shipped) out[n] = palettes[n];
+    return out;
+}
+
 export function load() {
     try {
         let raw = localStorage.getItem(KEY);
@@ -220,11 +248,41 @@ export function load() {
         }
 
         const { palettes, added } = addNewDefaults(parsed);
-        if (added) save(palettes);
+        const ordered = inCatalogueOrder(palettes);
+        if (added) save(ordered);
         localStorage.setItem(VERSION_KEY, String(DEFAULTS_VERSION));
-        return palettes;
+        return ordered;
     } catch {
         return { ...DEFAULT_PALETTES };
+    }
+}
+
+/** { name: count } — how many of each palette's last colours were hand-added. */
+export function loadAdded() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(ADDED_KEY) || '{}');
+        const out = {};
+        if (raw && typeof raw === 'object') {
+            for (const [name, n] of Object.entries(raw)) {
+                if (typeof name === 'string' && Number.isFinite(n) && n > 0) out[name] = Math.floor(n);
+            }
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
+
+export function saveAdded(added) {
+    try {
+        // Only the non-zero entries: the common case is a palette with none,
+        // and storing those would grow the record for no information.
+        const trimmed = {};
+        for (const [name, n] of Object.entries(added || {})) if (n > 0) trimmed[name] = n;
+        localStorage.setItem(ADDED_KEY, JSON.stringify(trimmed));
+        return true;
+    } catch {
+        return false;
     }
 }
 
@@ -237,9 +295,27 @@ export function save(palettes) {
     }
 }
 
-/** Serialise for the export button. */
-export function toJSON(palettes) {
-    return JSON.stringify(palettes, null, 2);
+/**
+ * Serialise for the export button.
+ *
+ * Wrapped rather than flat once there is anything to say beyond the colours, so
+ * the divider survives a round trip through a file. The old flat shape is still
+ * written when no palette has hand-added colours, and still read either way, so
+ * files move in both directions between versions.
+ */
+export function toJSON(palettes, added) {
+    const meta = {};
+    for (const [name, n] of Object.entries(added || {})) if (n > 0 && name in palettes) meta[name] = n;
+    if (!Object.keys(meta).length) return JSON.stringify(palettes, null, 2);
+    return JSON.stringify({ format: 'pixelator-palettes', palettes, added: meta }, null, 2);
+}
+
+/** Accept either the flat map or the wrapped form. */
+function unwrap(parsed) {
+    if (parsed && typeof parsed === 'object' && parsed.palettes && typeof parsed.palettes === 'object') {
+        return { palettes: parsed.palettes, added: parsed.added || {} };
+    }
+    return { palettes: parsed, added: {} };
 }
 
 /**
@@ -247,9 +323,11 @@ export function toJSON(palettes) {
  * rather than overwriting, so importing can never destroy existing work.
  * @returns {{merged: object, added: number, renamed: string[]}}
  */
-export function mergeImported(current, text) {
-    const incoming = sanitize(JSON.parse(text));
+export function mergeImported(current, text, currentAdded = {}) {
+    const raw = unwrap(JSON.parse(text));
+    const incoming = sanitize(raw.palettes);
     const merged = { ...current };
+    const mergedAdded = { ...currentAdded };
     const renamed = [];
     let added = 0;
     for (const [name, colors] of Object.entries(incoming)) {
@@ -262,7 +340,12 @@ export function mergeImported(current, text) {
             renamed.push(target);
         }
         merged[target] = colors;
+        // Clamp: a file could claim more hand-added colours than the palette has.
+        const claimed = Number(raw.added?.[name]);
+        if (Number.isFinite(claimed) && claimed > 0) {
+            mergedAdded[target] = Math.min(Math.floor(claimed), colors.length);
+        }
         added++;
     }
-    return { merged, added, renamed };
+    return { merged, added, renamed, mergedAdded };
 }

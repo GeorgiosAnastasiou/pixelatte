@@ -35,6 +35,7 @@
     --purple: #a855f7;
     --shadow: rgba(0, 0, 0, 0.45);
     --hard: #4c3a8f;              /* solid offset shadow, tinted by the accent */
+    --accent-2: #f5b642;          /* complement of the accent, for icon highlights */
     --checker-a: #17171d;
     --checker-b: #101015;
     --on-bright: #10130f;         /* text on bright green/yellow buttons */
@@ -54,6 +55,7 @@
     --purple: #9333ea;
     --shadow: rgba(0, 0, 0, 0.5);
     --hard: #1d4ed8;
+    --accent-2: #f6b73c;
     --checker-a: #16203a;
     --checker-b: #101830;
 }
@@ -72,6 +74,7 @@
     --purple: #b06cc9;
     --shadow: rgba(0, 0, 0, 0.55);
     --hard: #8a3d10;
+    --accent-2: #3cc5fb;
     --checker-a: #1f1a16;
     --checker-b: #171310;
 }
@@ -90,6 +93,7 @@
     --purple: #7e22ce;
     --shadow: rgba(15, 23, 42, 0.14);
     --hard: #9db2d0;
+    --accent-2: #e07a1f;
     --checker-a: #e8eef7;
     --checker-b: #dde5f1;
     --on-bright: #10130f;
@@ -109,6 +113,7 @@
     --purple: #7e22ce;
     --shadow: rgba(28, 25, 23, 0.12);
     --hard: #c9b79a;
+    --accent-2: #0e7490;
     --checker-a: #f2ede4;
     --checker-b: #e8e1d4;
     --on-bright: #10130f;
@@ -128,18 +133,44 @@
     --purple: #7c5295;
     --shadow: rgba(43, 38, 24, 0.14);
     --hard: #bcae8c;
+    --accent-2: #8a4a70;
     --checker-a: #eae3d2;
     --checker-b: #e1d8c2;
     --on-bright: #10130f;
 }
 
-/* Shared design tokens. Spacing is a 4px grid throughout. */
+/* Shared design tokens. Spacing is a 4px grid throughout.
+
+   --ui is the one knob for overall interface size: everything that decides how
+   big the app feels — the spacing grid, the base type size, the icons, the
+   minimum width of a tool button — is expressed as a multiple of it. Set it to
+   1 for the original scale. It is deliberately a single number so trying a
+   different size is one edit rather than an audit of every rule in the file. */
 :root {
-    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+    /* --ui-base is the one knob for interface size. --ui is what everything
+       actually reads: the same number divided by the browser's zoom, so the
+       interface keeps its physical size and zooming enlarges the picture rather
+       than the furniture around it. shell.js keeps --ui current.
+
+       --ui must stay a plain number, not a calc(). Substituting a calc into
+       `calc(62px * var(--ui))` yields a nested calc that Firefox rejects at
+       computed-value time, and the declaration then falls back to its initial
+       value — min-width silently became 0 rather than 77.5px. The literal below
+       is also what keeps the app correctly sized with scripting disabled. */
+    --ui-base: 1.25;
+    --ui: 1.25;
+    /* Borders and hairlines. Fixed pixels here are what made the mode bar creep
+       by nine percent across a 2x zoom while everything else held still. */
+    --line-w: calc(2px * var(--ui));
+
+    --s1: calc(4px * var(--ui)); --s2: calc(8px * var(--ui));
+    --s3: calc(12px * var(--ui)); --s4: calc(16px * var(--ui));
+    --s5: calc(24px * var(--ui)); --s6: calc(32px * var(--ui));
+
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     --pixel: 'PixelDisplay', var(--mono);
-    --lift: 3px;                   /* offset for the hard shadow */
+    --lift: calc(3px * var(--ui));  /* offset for the hard shadow */
     --checker: repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%)
                50% / 14px 14px;
     --safe-t: env(safe-area-inset-top, 0px);
@@ -154,7 +185,7 @@ html, body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
-    font-size: 15px;
+    font-size: calc(15px * var(--ui));
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     height: 100%;
@@ -169,6 +200,7 @@ html, body {
 
 /* ============================ shell ============================ */
 .app {
+    position: relative;
     height: 100dvh;
     display: grid;
     grid-template-rows: auto 1fr auto auto;
@@ -193,29 +225,32 @@ html, body {
 .app[data-mode="photo"]    [data-for~="photo"],
 .app[data-mode="video"]    [data-for~="video"],
 .app[data-mode="account"]  [data-for~="account"],
-.app[data-mode="settings"] [data-for~="settings"] { display: var(--show, block); }
+.app[data-mode="settings"] [data-for~="settings"],
+.app[data-mode="tips"]     [data-for~="tips"],
+.app[data-mode="legacy"]   [data-for~="legacy"] { display: var(--show, block); }
 
 /* ============================ top: modes ============================ */
 .modebar {
     display: flex;
     padding-top: var(--safe-t);
     background: var(--panel);
-    border-bottom: 2px solid var(--border);
+    border-bottom: var(--line-w) solid var(--border);
     z-index: 20;
 }
 .mode {
     flex: 1 1 0; min-width: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px;
-    padding: var(--s2) 1px calc(var(--s2) - 3px);
-    background: transparent; border: 0; border-bottom: 3px solid transparent;
+    gap: calc(2px * var(--ui));
+    padding: var(--s2) calc(1px * var(--ui)) calc(var(--s2) - 3px * var(--ui));
+    background: transparent; border: 0;
+    border-bottom: calc(3px * var(--ui)) solid transparent;
     color: var(--muted); cursor: pointer;
     font-family: var(--sans); font-size: 0.52rem; font-weight: 700;
     letter-spacing: 0.03em; text-transform: uppercase;
     box-shadow: none;
 }
 .mode span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.mode svg { width: 19px; height: 19px; }
+.mode svg { width: calc(19px * var(--ui)); height: calc(19px * var(--ui)); }
 .mode:active { background: var(--panel-2); }
 /* Present, not loud: enough to answer "where am I" at a glance. */
 .mode.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--panel-2); }
@@ -253,12 +288,42 @@ html, body {
     background: var(--checker);
     image-rendering: pixelated;    /* keep pixel art crisp when scaled by CSS */
 }
+/* The photo canvas is a viewport, not a picture. The view layer letterboxes the
+   image inside it and owns the zoom, so the element takes the whole stage and
+   its bitmap size is set in script from the box it ends up with. Sizing it from
+   its own bitmap, as .media does, would feed layout back into the measurement
+   layout had just produced. touch-action is what hands pinch and drag to the
+   view instead of to the page. */
+.media.viewport {
+    width: 100%; height: 100%;
+    max-width: none; max-height: none;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+/* Brush shape picker — four exclusive choices, so they read as one control. */
+.shape-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin: var(--s2) 0; }
+.shape-row.two { grid-template-columns: repeat(2, 1fr); }
+.shape-row .shape {
+    padding: var(--s2) var(--s1);
+    background: var(--panel-2); color: var(--muted);
+    border: 2px solid var(--border);
+    font-family: var(--sans); font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; box-shadow: none;
+}
+.shape-row .shape[aria-pressed="true"] {
+    background: var(--panel); color: var(--text);
+    border-color: var(--accent); box-shadow: var(--lift) var(--lift) 0 var(--hard);
+}
+
 /* Two surfaces share the extract stage — source and result — so they compare. */
 .stage-media[data-for="extract"] .media { max-height: 44%; }
 
 /* The swatch strip sits at its natural height, never squashed by the flex
    column it shares with a full-height canvas. */
-.stage-media .swatches { flex: none; max-width: 640px; }
+.stage-media .swatches {
+    touch-action: pan-x; flex: none; max-width: 640px; }
 
 /* The welcome picture is the screen, not a framed image on it. */
 .stage-media.bleed { padding: 0; }
@@ -288,7 +353,7 @@ html, body {
     letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
     box-shadow: var(--lift) var(--lift) 0 var(--hard);
 }
-.pick-big svg { width: 44px; height: 44px; }
+.pick-big svg { width: calc(44px * var(--ui)); height: calc(44px * var(--ui)); }
 .pick-big:active { transform: translate(var(--lift), var(--lift)); box-shadow: 0 0 0 var(--hard); }
 
 .stage-progress {
@@ -361,7 +426,8 @@ html, body {
 }
 /* The strip is the palette's face — wide enough to recognise at a glance. */
 .strip {
-    flex: none; display: flex; width: 76px; height: 26px;
+    flex: none; display: flex;
+    width: calc(76px * var(--ui)); height: calc(26px * var(--ui));
     border: 1px solid var(--border);
 }
 .strip span { flex: 1; }
@@ -433,7 +499,7 @@ html, body {
 /* ============================ bottom: tools ============================ */
 .toolbar {
     background: var(--panel);
-    border-top: 2px solid var(--border);
+    border-top: var(--line-w) solid var(--border);
     padding-bottom: var(--safe-b);
     z-index: 20;
 }
@@ -441,7 +507,9 @@ html, body {
    sitting blank. */
 .app[data-mode="welcome"] .toolbar,
 .app[data-mode="account"] .toolbar,
-.app[data-mode="settings"] .toolbar { display: none; }
+.app[data-mode="settings"] .toolbar,
+.app[data-mode="tips"] .toolbar,
+.app[data-mode="legacy"] .toolbar { display: none; }
 
 /* Extract gating: until an image is loaded the screen is the upload prompt
    alone — no tool bar, no empty swatch strip explaining itself.
@@ -454,24 +522,32 @@ html, body {
     gap: var(--s1);
     overflow-x: auto; overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    /* Say it explicitly. Left to `auto`, a WebView is free to decide a drag
+       that starts on a button belongs to the button rather than to the strip,
+       and the bar then refuses to move under a finger while scrolling fine with
+       a mouse. pan-x also stops a sideways swipe turning into a vertical one. */
+    touch-action: pan-x;
+    overscroll-behavior-inline: contain;
     scrollbar-width: none;
     padding: var(--s2) var(--s2);
 }
+/* The buttons must not claim the gesture before the strip sees it. */
+.tools > .tool { touch-action: pan-x; }
 .tools::-webkit-scrollbar { display: none; }
 
 .tool {
     flex: 0 0 auto;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px;
-    min-width: 62px; padding: var(--s2) var(--s1);
+    gap: calc(3px * var(--ui));
+    min-width: calc(62px * var(--ui)); padding: var(--s2) var(--s1);
     background: var(--panel-2); color: var(--text);
-    border: 2px solid var(--border); border-radius: 0;
+    border: var(--line-w) solid var(--border); border-radius: 0;
     font-family: var(--sans); font-size: 0.56rem; font-weight: 700;
     letter-spacing: 0.05em; text-transform: uppercase;
     cursor: pointer; box-shadow: none;
     transition: none;
 }
-.tool svg { width: 22px; height: 22px; }
+.tool svg { width: calc(22px * var(--ui)); height: calc(22px * var(--ui)); }
 .tool span { white-space: nowrap; }
 .tool:active:not(:disabled) { background: var(--line); transform: none; box-shadow: none; }
 .tool:disabled { opacity: 0.4; }
@@ -730,7 +806,7 @@ input.cp-slider::-moz-range-thumb {
         padding: var(--s3) var(--s4);
         font-size: 0.66rem; letter-spacing: 0.08em;
     }
-    .mode svg { width: 17px; height: 17px; }
+    .mode svg { width: calc(17px * var(--ui)); height: calc(17px * var(--ui)); }
 
     .toolbar {
         border-top: 0; border-right: 2px solid var(--border);
@@ -744,7 +820,10 @@ input.cp-slider::-moz-range-thumb {
         padding: var(--s2);
         gap: var(--s2);
     }
-    .tool { width: 84px; min-width: 0; padding: var(--s2) var(--s1); }
+    /* The rail gives every tool the same width instead of sizing to its
+       label. Scaled like everything else, so the interface scale and the
+       zoom compensation reach it too. */
+    .tool { width: calc(84px * var(--ui)); min-width: 0; padding: var(--s2) var(--s1); }
 
     /* Nothing to reach around any more, so the panel sits beside its tool. */
     .pop { width: min(380px, 34vw); max-height: min(72vh, 620px); }
@@ -779,3 +858,383 @@ input.cp-slider::-moz-range-thumb {
     color: var(--muted);
 }
 .pal-list > .pal-section:first-child { margin-top: 0; }
+
+
+/* ============================ tips ============================ */
+.tips { margin: var(--s2) 0 0; }
+.tips dt {
+    margin-top: var(--s3);
+    font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent);
+}
+.tips dd { margin: var(--s1) 0 0; color: var(--muted); font-size: 0.86rem; }
+
+/* ============================ legacy ============================ */
+/* Its own livery, scoped to the screen. The app has six themes and this is
+   none of them on purpose: the page is about somebody else's app, and dressing
+   it in the current theme would quietly claim it as part of this one. */
+.sheet.legacy {
+    background: #fffaf3;
+    color: #2a1a0c;
+}
+.sheet.legacy .block {
+    background: #ffffff;
+    border-color: #f0a860;
+    box-shadow: var(--lift) var(--lift) 0 #f7c68f;
+}
+.sheet.legacy h2 { color: #b8560f; }
+.sheet.legacy p { color: #43301f; font-size: 0.92rem; }
+.sheet.legacy strong { color: #a34a08; }
+.legacy-mark {
+    margin: 0 0 var(--s1);
+    font-family: var(--pixel);
+    font-size: 1.1rem; letter-spacing: 0.04em;
+    color: #ef8b28;
+}
+.legacy-sign {
+    margin-top: var(--s4);
+    border-top: 2px solid #f6d3ac; padding-top: var(--s3);
+    font-style: italic;
+}
+
+
+/* ---- the grouped mode ---------------------------------------------------
+   Settings, Account, Tips and Legacy share one slot in the bar. The caret is
+   the only honest way to say that pressing it opens something rather than going
+   somewhere, and the slot stays highlighted while any of the four is current so
+   the bar never looks as though nothing is selected. */
+/* Below the desktop breakpoint the last four modes live behind the caret;
+   above it there is room for all eight and the caret is redundant. */
+.mode.grouped { display: none; }
+.mode.more { position: relative; }
+@media (min-width: 900px) {
+    .mode.grouped { display: flex; }
+    .mode.more { display: none; }
+}
+.caret {
+    display: block;
+    width: 0; height: 0;
+    margin: 2px auto 0;
+    border-left: calc(4px * var(--ui)) solid transparent;
+    border-right: calc(4px * var(--ui)) solid transparent;
+    border-top: calc(4px * var(--ui)) solid currentColor;
+}
+.mode.more[aria-expanded="true"] .caret { transform: rotate(180deg); }
+
+.mode-menu {
+    position: fixed;
+    z-index: 60;
+    min-width: calc(150px * var(--ui));
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    box-shadow: var(--lift) var(--lift) 0 var(--hard), 0 8px 24px var(--shadow);
+    padding: var(--s1);
+    animation: pop-in 0.12s ease-out;
+}
+.mode-menu[hidden] { display: none; }
+.mode-menu-item {
+    display: flex; align-items: center; gap: var(--s3);
+    width: 100%;
+    padding: var(--s2) var(--s3);
+    background: transparent; color: var(--text);
+    border: 0; border-radius: 0;
+    font-family: var(--sans); font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.02em; text-transform: none; text-align: left;
+    cursor: pointer; box-shadow: none;
+}
+.mode-menu-item svg { width: calc(18px * var(--ui)); height: calc(18px * var(--ui)); flex: none; }
+.mode-menu-item:hover { background: var(--panel-2); }
+.mode-menu-item[aria-current="true"] { color: var(--accent); background: var(--panel-2); }
+
+
+/* A slider for reaching, a number for landing exactly. Both drive the same
+   value, so they sit on one row rather than reading as two settings. */
+.field-row { display: flex; align-items: center; gap: var(--s2); }
+.field-row input[type="range"] { flex: 1 1 auto; min-width: 0; }
+.num {
+    flex: none; width: calc(66px * var(--ui));
+    padding: var(--s1) var(--s2);
+    background: var(--panel-2); color: var(--text);
+    border: 2px solid var(--border);
+    font-family: var(--mono); font-size: 0.78rem;
+    font-variant-numeric: tabular-nums; text-align: right;
+}
+.num:focus { border-color: var(--accent); outline: none; }
+
+
+/* The line between colours a picture suggested and colours you mixed. Fixed
+   width so it costs the same however many swatches share the strip — the strip
+   itself never grows, the swatches inside it get narrower. */
+.strip-div {
+    flex: none; width: 3px; align-self: stretch;
+    background: var(--bg);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+}
+.swatch-div {
+    flex: none; width: 6px; align-self: stretch;
+    background: var(--bg);
+    border-left: 2px solid var(--line);
+    border-right: 2px solid var(--line);
+}
+
+
+/* The draw palette: every colour including the draw-only ones, so a strip here
+   is a chooser rather than a summary. Wraps instead of scrolling — a colour you
+   cannot see is one you will not use. */
+.draw-swatches { flex-wrap: wrap; overflow: visible; max-height: none; }
+.draw-swatches .swatch { flex: 0 0 auto; width: calc(30px * var(--ui)); height: calc(30px * var(--ui)); }
+.draw-swatches .swatch[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+
+/* Crop presets: six shapes on one row, so picking one is a glance not a menu. */
+.ratio-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--s1); margin: var(--s2) 0; }
+.ratio-row .shape { padding: var(--s2) 0; font-size: 0.56rem; }
+.num.wide { width: auto; flex: 1 1 auto; text-align: left; }
+.by { flex: none; color: var(--muted); font-family: var(--mono); }
+#ph-crop-lock[aria-pressed="true"] {
+    background: var(--panel); color: var(--text);
+    border-color: var(--accent); box-shadow: var(--lift) var(--lift) 0 var(--hard);
+}
+
+
+/* ---- in-app browser ----------------------------------------------------
+   Instagram and friends open links in a WebView with no download manager, so
+   every save button in here is inert. Saying so once, at the top, beats letting
+   someone pixelate a photo and then discover they cannot keep it. */
+.inapp-banner {
+    display: flex; align-items: center; gap: var(--s2);
+    padding: var(--s2) var(--s3);
+    background: var(--yellow); color: var(--on-bright, #10130f);
+    font-size: 0.76rem; line-height: 1.35;
+    border-bottom: 2px solid var(--border);
+    z-index: 30;
+}
+.inapp-banner span { flex: 1 1 auto; min-width: 0; }
+.inapp-banner button { flex: none; padding: var(--s1) var(--s2); font-size: 0.7rem; }
+
+.save-fallback {
+    position: fixed; inset: 0; z-index: 90;
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--s3);
+    background: rgba(0, 0, 0, 0.72);
+}
+.save-fallback-panel {
+    width: min(420px, 100%); max-height: 90vh; overflow-y: auto;
+    padding: var(--s4);
+    background: var(--panel); color: var(--text);
+    border: 2px solid var(--accent);
+    box-shadow: var(--lift) var(--lift) 0 var(--hard);
+}
+.save-fallback-panel h3 { margin: 0 0 var(--s2); }
+.save-fallback-panel p { margin: 0 0 var(--s2); font-size: 0.84rem; color: var(--muted); }
+.save-fallback-panel img {
+    display: block; width: 100%; height: auto;
+    margin: var(--s3) 0;
+    border: 2px solid var(--line);
+    image-rendering: pixelated;
+}
+.save-fallback-panel button { width: 100%; margin-top: var(--s2); }
+
+
+/* ---- the opening ---------------------------------------------------------
+   On launch the app is a picture and nothing else. The four workspaces then
+   rise out of it one at a time and settle at half opacity: present, legible,
+   and clearly not yet chosen — which is the honest state, because nothing is.
+   They come to full strength the moment a mode is picked, so the bar reads as
+   an invitation first and a control afterwards.
+
+   The bar keeps its own background throughout; it is the buttons that arrive,
+   not the strip, so the layout never shifts under the artwork. */
+/* The launch screen is the picture and nothing else: no mode bar, no tool bar,
+   no status line. The stage is placed explicitly across both of the top rows —
+   without that, hiding the bar leaves the stage auto-placed into an `auto` row,
+   and .stage-media is inset:0 on it, so it collapses to nothing. The column has
+   to be pinned too, or an item placed on a row but not a column gets
+   auto-placed sideways into an invented second column of zero width. */
+.app[data-mode="welcome"] .modebar { display: none; }
+/* The whole grid, every row and every column. Naming a specific column was a
+   trap: at the desktop breakpoint the layout becomes two columns with the tool
+   rail first, and the rail is hidden on the launch screen — so pinning the
+   stage to column 1 put it in a column that collapses to zero width, and the
+   screen went black on desktop while staying correct on a phone, which has
+   only one column to be wrong about. */
+.app[data-mode="welcome"] .stage { grid-area: 1 / 1 / -1 / -1; }
+
+/* Anyone who has asked the system for less motion gets the end state directly. */
+
+
+
+
+
+
+/* ============================ launch screen ============================
+   One column, centred on the artwork: the name, the mark, and then either an
+   invitation or the four workspaces. The invitation is replaced rather than
+   pushed aside, so the block never jumps as the state changes. */
+.splash {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: var(--s3);
+    padding: var(--s4);
+    z-index: 2;
+    text-align: center;
+}
+
+.splash-title {
+    margin: 0;
+    max-width: 100%;
+    font-family: var(--pixel);
+    font-size: clamp(1.05rem, 6vw, 3rem);
+    letter-spacing: 0.04em;
+    color: #f6efe4;
+    /* Its own contrast, because the picture behind it can be any colour. */
+    text-shadow: 0 2px 0 #2b1d12, 0 0 12px rgba(0, 0, 0, 0.65);
+    animation: splash-in 1.1s ease-out both;
+}
+
+.splash-logo {
+    display: block;
+    width: clamp(84px, 26vw, 150px); height: auto;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.45));
+    animation: splash-in 1.1s ease-out 0.35s both;
+}
+
+/* The invitation. Dark, small, and clearly a label rather than a control. */
+.splash-hint {
+    margin: 0;
+    padding: var(--s2) var(--s3);
+    background: rgba(20, 14, 9, 0.82);
+    color: #efe4d4;
+    border: 2px solid rgba(0, 0, 0, 0.55);
+    font-family: var(--mono); font-size: 0.74rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    animation: splash-in 1s ease-out 0.9s both, splash-breathe 2.6s ease-in-out 1.9s infinite;
+}
+.splash-hint[hidden] { display: none; }
+
+/* Two by two, so the four read as a set of choices rather than a list. */
+.splash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s3);
+    width: min(340px, 82vw);
+    margin-top: var(--s2);
+}
+.splash-grid[hidden] { display: none; }
+.splash-grid button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--s2);
+    /* Square, whatever the screen. Padding alone made the tiles as wide as the
+       column and as tall as their contents, so the four came out as rectangles
+       whose proportions changed with the window. */
+    aspect-ratio: 1;
+    padding: var(--s2);
+    /* Tinted to the mean colour of the artwork behind, so the four sit in the
+       picture rather than on top of it. Set from script; the fallback matters
+       only for the frame before the artwork has been measured. */
+    background: rgba(var(--splash-mean, 40 40 48) / 0.5);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-radius: 0;
+    font-family: var(--sans); font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    cursor: pointer; box-shadow: none;
+    opacity: 0;
+    animation: splash-choice 0.5s ease-out both;
+}
+.splash-grid button:nth-child(1) { animation-delay: 0s; }
+.splash-grid button:nth-child(2) { animation-delay: 0.06s; }
+.splash-grid button:nth-child(3) { animation-delay: 0.12s; }
+.splash-grid button:nth-child(4) { animation-delay: 0.18s; }
+.splash-grid button:hover,
+.splash-grid button:focus-visible {
+    opacity: 1;
+    border-color: #fff;
+    background: rgba(var(--splash-mean, 40 40 48) / 0.75);
+}
+.splash-grid svg { width: calc(26px * var(--ui)); height: calc(26px * var(--ui)); }
+
+@keyframes splash-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+/* Ends at half strength: chosen, not yet committed to. */
+@keyframes splash-choice {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 0.5; transform: none; }
+}
+@keyframes splash-breathe {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .splash-title, .splash-logo, .splash-hint { animation: none; }
+    .splash-grid button { animation: none; opacity: 0.5; }
+}
+
+
+/* ---- start-up failure ----------------------------------------------------
+   Deliberately plain and dependency-free: it has to render when the thing that
+   styles everything else may itself be what failed. */
+.boot-failure {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.8);
+    font-family: system-ui, sans-serif;
+}
+.boot-failure-panel {
+    width: min(460px, 100%); max-height: 90vh; overflow-y: auto;
+    padding: 20px;
+    background: #15151a; color: #ececf1;
+    border: 2px solid #ef4444;
+}
+.boot-failure-panel h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.boot-failure-panel p { margin: 0 0 10px; font-size: 0.86rem; line-height: 1.5; color: #b9b9c6; }
+.boot-failure-panel ul { margin: 0 0 10px; padding-left: 18px; font-size: 0.82rem; color: #ececf1; }
+.boot-failure-panel li { margin-bottom: 4px; }
+.boot-failure-panel button { width: 100%; margin-top: 8px; }
+
+
+/* A destructive button waiting for its second press. Red, because the next
+   press is the one that does it. */
+.armed {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+}
+
+/* A control that does nothing in the current state. Dimmed rather than hidden:
+   the setting still exists and will come back, and a control that vanishes is
+   harder to find again than one that is greyed. */
+.field.inert { opacity: 0.45; }
+.field.inert input { pointer-events: none; }
+
+
+/* A popover header that stays put while the panel scrolls under it. The
+   negative offset cancels the panel's own top padding so it sits flush against
+   the edge rather than leaving a strip of scrolled content above it. */
+.pop-sticky {
+    position: sticky;
+    top: calc(-1 * var(--s3));
+    z-index: 2;
+    margin: calc(-1 * var(--s3)) calc(-1 * var(--s3)) var(--s2);
+    padding: var(--s3) var(--s3) var(--s2);
+    background: var(--panel);
+    border-bottom: var(--line-w) solid var(--border);
+}
+.pop-sticky h3 { margin-top: 0; }
+
+/* Crop cursors. The centre says "this can be dragged"; each handle says which
+   way it will move, which a hand alone cannot. */
+.media.viewport.crop-move   { cursor: grab; }
+.media.viewport.crop-moving { cursor: grabbing; }
+.media.viewport.crop-n, .media.viewport.crop-s   { cursor: ns-resize; }
+.media.viewport.crop-e, .media.viewport.crop-w   { cursor: ew-resize; }
+.media.viewport.crop-nw, .media.viewport.crop-se { cursor: nwse-resize; }
+.media.viewport.crop-ne, .media.viewport.crop-sw { cursor: nesw-resize; }

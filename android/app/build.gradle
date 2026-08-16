@@ -4,7 +4,7 @@ android {
     namespace = "com.PixelatorCoves.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.PixelatorCoves.app"
+        applicationId "com.pixelatte.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

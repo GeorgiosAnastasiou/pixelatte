@@ -17,12 +17,15 @@ import {
     applyOffsets, boxDownsample, mapToPalette, mapToPaletteExact, blockHeight,
 } from './core.js';
 import { chooseMapper, streamingMemoryMB } from './pipeline.js';
+import { spatialSmooth, maxRadius } from './smooth.js';
 import { firstFrame, renderStill } from './preview.js';
 import * as encodeWC from './encode.js';
 import { getPaletteRgb, onPalettesChanged } from './palettes.js';
 import { attachPalettePicker } from './palettepicker.js';
 import { linkBlockSliders } from './blocksize.js';
-import { $, makeLogger, bindSlider, fillPaletteSelect, nextFrame, setLabel } from './ui.js';
+import { setMediaLoaded } from './shell.js';
+import { $, makeLogger, bindSlider, fillPaletteSelect, nextFrame, setLabel,
+         setStrengthActive } from './ui.js';
 import { saveBlob } from './save.js';
 
 const log = makeLogger('vid-log');
@@ -63,6 +66,9 @@ const settings = () => ({
     hold: holdFactor(currentFps(), $('vid-hold').checked),
     ...blocks.dims(),
     alpha: Number($('vid-smooth').value) / 100,
+    smoothMode: $('vid-smode').querySelector('[aria-pressed="true"]')?.dataset.smode ?? 'despeckle',
+    smoothRadius: Number($('vid-sradius').value),
+    smoothStrength: Number($('vid-sstrength').value) / 100,
     offsets: [Number($('vid-r').value), Number($('vid-g').value), Number($('vid-b').value)],
     paletteName: $('vid-palette').value,
     exactDownscale: $('vid-exact').checked,
@@ -85,7 +91,8 @@ function renderPreview() {
 
     const { lut } = chooseMapper(palette, cfg.bw * (cfg.bh || 1));
     const { bw, bh } = renderStill($('vid-canvas'), frameData,
-        { bw: cfg.bw, bh: cfg.bh, offsets: cfg.offsets, palette, lut });
+        { bw: cfg.bw, bh: cfg.bh, offsets: cfg.offsets, palette, lut,
+          smooth: { radius: cfg.smoothRadius, mode: cfg.smoothMode, strength: cfg.smoothStrength } });
 
     $('vid-out').classList.add('hidden');
     $('vid-canvas').classList.remove('hidden');
@@ -269,8 +276,16 @@ async function streamProcess(file, cfg, onProgress) {
     let slowFrames = 0;
 
     /** Blend, map and encode one reduced frame into one output slot. */
-    const emitFrom = async (cur) => {
+    const emitFrom = async (raw) => {
         if (t0 === 0) t0 = performance.now();
+
+        // Spatial before temporal, and both before the palette. Cleaning each
+        // frame first means the blend carries clean frames forward instead of
+        // averaging a speck across the next several.
+        const cur = cfg.smoothRadius >= 1
+            ? spatialSmooth(raw, bw, bh,
+                { radius: cfg.smoothRadius, mode: cfg.smoothMode, strength: cfg.smoothStrength })
+            : raw;
 
         // Temporal blend against the running state (pre-palette, as required).
         if (a > 0) {
@@ -442,6 +457,7 @@ export function init() {
 
     blocks = linkBlockSliders({
         wId: 'vid-bw', wValId: 'vid-bw-val', hId: 'vid-bh', hValId: 'vid-bh-val',
+        wNumId: 'vid-bw-num', hNumId: 'vid-bh-num',
         badgeId: 'vid-blocks',
         getSourceSize: () => (meta.width ? { w: meta.width, h: meta.height } : null),
         onChange: schedulePreview,
@@ -449,6 +465,33 @@ export function init() {
 
     // Smoothing is temporal, so it cannot show in a single frame — no preview.
     bindSlider('vid-smooth', 'vid-smooth-val');
+
+    const SMODE_NOTES = {
+        despeckle: 'Median. Removes an isolated block outright and leaves edges where they are '
+                 + '— the one for a sky with stray specks in it.',
+        soften: 'Distance-weighted average. Reduces detail everywhere, edges included.',
+    };
+    const paintSpatial = () => {
+        const mode = $('vid-smode').querySelector('[aria-pressed="true"]')?.dataset.smode ?? 'despeckle';
+        $('vid-smode-note').textContent = SMODE_NOTES[mode] ?? '';
+        if (meta.width) {
+            const d = blocks.dims();
+            $('vid-sradius').max = String(maxRadius(d.bw, d.bh));
+        }
+        setStrengthActive('vid-sstrength', Number($('vid-sradius').value) >= 1);
+    };
+    for (const btn of $('vid-smode').querySelectorAll('.shape')) {
+        btn.addEventListener('click', () => {
+            for (const o of $('vid-smode').querySelectorAll('.shape')) {
+                o.setAttribute('aria-pressed', String(o === btn));
+            }
+            paintSpatial();
+            schedulePreview();
+        });
+    }
+    bindSlider('vid-sradius', 'vid-sradius-val', () => { paintSpatial(); schedulePreview(); });
+    bindSlider('vid-sstrength', 'vid-sstrength-val', schedulePreview);
+    paintSpatial();
     bindSlider('vid-r', 'vid-r-val', schedulePreview);
     bindSlider('vid-g', 'vid-g-val', schedulePreview);
     bindSlider('vid-b', 'vid-b-val', schedulePreview);
@@ -464,6 +507,7 @@ export function init() {
             const frame = await firstFrame(file);
             frameData = frame.imageData;
             meta = { width: frame.width, height: frame.height, duration: frame.duration };
+            setMediaLoaded('video', true);
             $('vid-info').textContent =
                 `${file.name} — ${meta.width}x${meta.height}, ${meta.duration.toFixed(1)}s`;
             $('vid-empty').classList.add('hidden');

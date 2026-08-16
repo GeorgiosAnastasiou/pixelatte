@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Pixelator</string>
-    <string name="title_activity_main">Pixelator</string>
-    <string name="package_name">com.PixelatorCoves.app</string>
-    <string name="custom_url_scheme">com.PixelatorCoves.app</string>
+    <string name="app_name">Pixelatte</string>
+    <string name="title_activity_main">Pixelatte</string>
+    <string name="package_name">com.pixelatte.app</string>
+    <string name="custom_url_scheme">com.pixelatte.app</string>
 </resources>
