@@ -55,7 +55,7 @@
             <canvas id="welcome-canvas" class="media cover"></canvas>
         </div>
 
-        <!-- Palettes: every palette you have, listed, with the selected one's
+        <!-- Palettes: every palette, listed, with the selected one's
              colours laid out below for editing. The picture is not the point on
              this screen, so it shrinks to a corner thumbnail — and appears only
              once you have loaded something of your own. -->
@@ -76,14 +76,14 @@
                 <div id="pal-swatches" class="swatches"></div>
             </div>
 
-            <!-- One level of undo, for the last destructive thing you did. -->
+            <!-- One level of undo -->
             <div class="undo-bar hidden" id="pal-undo" role="status">
                 <span id="pal-undo-text"></span>
                 <button id="pal-undo-btn" class="ghost">Undo</button>
             </div>
         </div>
 
-        <!-- Extract: nothing but an invitation until an image exists. -->
+        <!-- Extract: nothing until an image exists. -->
         <div class="stage-media" data-for="extract">
             <div class="empty-state" id="ex-empty">
                 <button id="ex-pick" class="pick-big" data-file="ex-file" data-icon="image"><span>Upload an image</span></button>
@@ -122,7 +122,8 @@
                 <h2>Account</h2>
                 <p class="hint">There is no account to sign in to. Pixelator runs entirely on this
                     device: your palettes, images and video never leave it, and nothing here needs
-                    a server.</p>
+                    a server. Maybe this will be implemented when the app launches. Until then, go
+                    grab a coffee instead of making accounts everywhere. Cheers! </p>
                 <p class="hint">If syncing palettes between devices is what you came here for, use
                     <strong>Transfer</strong> on the Palettes bar — it writes a .json file you can
                     move yourself.</p>
@@ -416,7 +417,7 @@
                 On: the older path, which records in real time and can drop frames.</p>
             <label class="check"><input type="checkbox" id="vid-exact"> Exact box-filter downscale</label>
             <p class="hint">Off: the GPU scales each frame — much faster, minutely different.
-                On: matches the original Python pipeline exactly.</p>
+                On: Original legacy pipeline of v1. </p>
         </div>
     </div>
 
