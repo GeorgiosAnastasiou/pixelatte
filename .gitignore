@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Test media recovered from git history for local testing — 50 MB, deliberately
+# not re-committed (it was removed from the repo previously).
+samples/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

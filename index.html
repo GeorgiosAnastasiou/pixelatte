@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Pixelator</title>
+<!-- Inline so the packaged app makes no network request for it. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23111827'/%3E%3Crect x='2' y='2' width='6' height='6' fill='%239BBC0F'/%3E%3Crect x='8' y='8' width='6' height='6' fill='%2360A5FA'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/app.css">
+<script>
+// Applied before first paint so the page never flashes the default theme and
+// then swaps. Deliberately duplicates the small resolve() in js/theme.js —
+// module scripts are deferred, which would be too late to avoid the flash.
+(function () {
+    try {
+        var pref = localStorage.getItem('pixelator-theme') || 'system';
+        var id = pref;
+        if (pref === 'system') {
+            id = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
+                ? 'daylight' : 'graphite';
+        }
+        document.documentElement.setAttribute('data-theme', id);
+    } catch (e) { /* private mode: fall back to the :root defaults */ }
+})();
+</script>
+</head>
+
+<!--
+  Fixed viewport, three regions: mode bar / stage / tool bar.
+  `data-mode` on .app drives everything visible — [data-for] elements show only
+  when their mode is current, so switching modes is one attribute write.
+  The app opens on "welcome": nothing highlighted, no tool bar, artwork edge to
+  edge under the mode bar.
+-->
+<body>
+<div class="app" id="app" data-mode="welcome">
+
+    <!-- ======================= TOP: modes ======================= -->
+    <header class="modebar" role="tablist" aria-label="Sections">
+        <button class="mode" data-mode="extract"  data-icon="extract"  role="tab"><span>Extract</span></button>
+        <button class="mode" data-mode="palettes" data-icon="palette"  role="tab"><span>Palettes</span></button>
+        <button class="mode" data-mode="photo"    data-icon="image"    role="tab"><span>Photo</span></button>
+        <button class="mode" data-mode="video"    data-icon="film"     role="tab"><span>Video</span></button>
+        <button class="mode" data-mode="account"  data-icon="account"  role="tab"><span>Account</span></button>
+        <button class="mode" data-mode="settings" data-icon="settings" role="tab"><span>Settings</span></button>
+    </header>
+
+    <!-- ======================= MIDDLE: stage ======================= -->
+    <main class="stage" id="stage">
+
+        <!-- Welcome: a random picture from assets/welcome, edge to edge. Falls
+             back to art generated in code when that folder is empty. -->
+        <div class="stage-media bleed" data-for="welcome">
+            <img id="welcome-img" class="media cover hidden" alt="">
+            <canvas id="welcome-canvas" class="media cover"></canvas>
+        </div>
+
+        <!-- Palettes: every palette, listed, with the selected one's
+             colours laid out below for editing. The picture is not the point on
+             this screen, so it shrinks to a corner thumbnail — and appears only
+             once you have loaded something of your own. -->
+        <div class="stage-sheet" data-for="palettes">
+            <!-- The thumbnail is a column beside the list, not floating over
+                 it: overlapping the rows would hide their colour counts. -->
+            <div class="pal-top">
+                <div class="pal-list" id="pal-list" role="listbox" aria-label="Your palettes"></div>
+                <canvas id="pal-mini" class="pal-mini hidden"
+                        aria-label="Your image through the selected palette"></canvas>
+            </div>
+
+            <div class="pal-selected">
+                <p class="pal-selected-head">
+                    <span id="pal-selected-name">—</span>
+                    <span id="pal-count" class="badge"></span>
+                </p>
+                <div id="pal-swatches" class="swatches"></div>
+            </div>
+
+            <!-- One level of undo -->
+            <div class="undo-bar hidden" id="pal-undo" role="status">
+                <span id="pal-undo-text"></span>
+                <button id="pal-undo-btn" class="ghost">Undo</button>
+            </div>
+        </div>
+
+        <!-- Extract: nothing until an image exists. -->
+        <div class="stage-media" data-for="extract">
+            <div class="empty-state" id="ex-empty">
+                <button id="ex-pick" class="pick-big" data-file="ex-file" data-icon="image"><span>Upload an image</span></button>
+                <p class="hint">Build a palette from the colours it actually contains.</p>
+            </div>
+            <canvas id="ex-applied" class="media hidden"></canvas>
+            <canvas id="ex-source" class="media hidden"></canvas>
+            <p id="ex-applied-note" class="caption"></p>
+            <div id="ex-swatches" class="swatches"></div>
+        </div>
+
+        <!-- Photo: the live render target. -->
+        <div class="stage-media" data-for="photo">
+            <div class="empty-state" id="ph-empty">
+                <button id="ph-pick" class="pick-big" data-file="ph-file" data-icon="image"><span>Upload an image</span></button>
+                <p class="hint">Every change below redraws it as you drag.</p>
+            </div>
+            <canvas id="ph-canvas" class="media hidden"></canvas>
+        </div>
+
+        <!-- Video: the first frame under the current settings — a still, not a
+             player — and the finished clip once there is one. -->
+        <div class="stage-media" data-for="video">
+            <div class="empty-state" id="vid-empty">
+                <button id="vid-pick" class="pick-big" data-file="vid-file" data-icon="film"><span>Upload a video</span></button>
+                <p class="hint">The first frame previews your settings before you commit to a render.</p>
+            </div>
+            <video id="vid-out" class="media hidden" controls playsinline></video>
+            <canvas id="vid-canvas" class="media hidden"></canvas>
+            <p id="vid-frame-note" class="caption"></p>
+        </div>
+
+        <!-- Account and Settings are full-stage sheets, not media surfaces. -->
+        <div class="sheet" data-for="account">
+            <section class="block">
+                <h2>Account</h2>
+                <p class="hint">There is no account to sign in to. Pixelator runs entirely on this
+                    device: your palettes, images and video never leave it, and nothing here needs
+                    a server. Maybe this will be implemented when the app launches. Until then, go
+                    grab a coffee instead of making accounts everywhere. Cheers! </p>
+                <p class="hint">If syncing palettes between devices is what you came here for, use
+                    <strong>Transfer</strong> on the Palettes bar — it writes a .json file you can
+                    move yourself.</p>
+            </section>
+        </div>
+
+        <div class="sheet" data-for="settings">
+            <section class="block">
+                <h2>Appearance</h2>
+                <p class="hint" id="theme-current"></p>
+                <button id="theme-system" class="ghost">Match system</button>
+                <div class="theme-group-label">Dark</div>
+                <div class="theme-grid" id="theme-grid-dark"></div>
+                <div class="theme-group-label">Light</div>
+                <div class="theme-grid" id="theme-grid-light"></div>
+            </section>
+
+            <section class="block">
+                <h2>Activity</h2>
+                <div id="log" class="log"></div>
+            </section>
+
+            <section class="block">
+                <h2>About</h2>
+                <p class="hint">Pixelator — pixelate photos and video against a palette you
+                    control. Works fully offline.</p>
+            </section>
+        </div>
+
+        <!-- Progress sits over the stage while a video job runs. -->
+        <div class="stage-progress hidden" id="vid-progress" data-for="video">
+            <label>Decode &amp; pixelate</label>
+            <progress id="vid-bar-proc" value="0" max="100"></progress>
+            <label>Blend, map &amp; encode</label>
+            <progress id="vid-bar-enc" class="green" value="0" max="100"></progress>
+        </div>
+    </main>
+
+    <!-- One status line per mode, directly under the stage. -->
+    <div class="statusbar">
+        <p class="status" data-for="palettes"><span id="pal-total"></span></p>
+        <p class="status" data-for="extract"><span id="ex-info"></span> <span id="ex-timing"></span></p>
+        <p class="status" data-for="photo"><span id="ph-info"></span> <span id="ph-timing"></span></p>
+        <p class="status" data-for="video"><span id="vid-info"></span> <span id="vid-timing"></span></p>
+    </div>
+
+    <!-- ======================= BOTTOM: tools ======================= -->
+    <!-- Horizontally scrollable; one bar per mode. Account and Settings have
+         none — they are sheets, not workspaces. -->
+    <footer class="toolbar">
+
+        <div class="tools" data-for="extract">
+            <!-- Leftmost, and only once an image exists: swap it for another. -->
+            <button class="tool" data-file="ex-file"      data-icon="image"><span>New image</span></button>
+            <button class="tool" data-pop="pop-ex-method" data-icon="tune"><span>Method</span></button>
+            <button class="tool" data-pop="pop-ex-count"  data-icon="count"><span>Colours</span></button>
+            <button class="tool" data-pop="pop-ex-tune"   data-icon="radius" id="ex-tune-tool"><span>Tuning</span></button>
+            <button class="tool primary" id="ex-run"      data-icon="run"><span>Extract</span></button>
+            <button class="tool" data-pop="pop-ex-save"   data-icon="save"><span>Save</span></button>
+        </div>
+
+        <!-- No "choose palette" tool: the list on the stage is the chooser.
+             Delete opens a panel rather than acting, so it takes two deliberate
+             presses and shows what is about to go. -->
+        <div class="tools" data-for="palettes">
+            <button class="tool" id="pal-new"               data-icon="add"><span>New</span></button>
+            <button class="tool" id="pal-rename"            data-icon="rename"><span>Rename</span></button>
+            <button class="tool" data-pop="pop-pal-add"     data-icon="pick"><span>Add colour</span></button>
+            <button class="tool" data-pop="pop-pal-list"    data-icon="hash"><span>Add list</span></button>
+            <button class="tool" id="pal-remove-mode"       data-icon="remove"><span>Remove</span></button>
+            <button class="tool" data-pop="pop-pal-delete"  data-icon="trash"><span>Delete</span></button>
+            <button class="tool" data-pop="pop-pal-io"      data-icon="transfer"><span>Transfer</span></button>
+        </div>
+
+        <div class="tools" data-for="photo">
+            <button class="tool" data-file="ph-file"       data-icon="image"><span>New image</span></button>
+            <button class="tool" data-pop="pop-ph-palette" data-icon="palette"><span>Palette</span></button>
+            <button class="tool" data-pop="pop-ph-blocks"  data-icon="blocks"><span>Pixel size</span></button>
+            <button class="tool" data-pop="pop-ph-rgb"     data-icon="rgb"><span>RGB</span></button>
+            <button class="tool" data-pop="pop-ph-live"    data-icon="live"><span>Live</span></button>
+            <button class="tool primary" id="ph-run"       data-icon="run"><span>Render</span></button>
+            <button class="tool" id="ph-save"              data-icon="save" disabled><span>Save PNG</span></button>
+        </div>
+
+        <div class="tools" data-for="video">
+            <button class="tool" data-file="vid-file"        data-icon="film"><span>New video</span></button>
+            <button class="tool" data-pop="pop-vid-palette"  data-icon="palette"><span>Palette</span></button>
+            <button class="tool" data-pop="pop-vid-fps"      data-icon="fps"><span>Frame rate</span></button>
+            <button class="tool" data-pop="pop-vid-blocks"   data-icon="blocks"><span>Pixel size</span></button>
+            <button class="tool" data-pop="pop-vid-rgb"      data-icon="rgb"><span>RGB</span></button>
+            <button class="tool" data-pop="pop-vid-smooth"   data-icon="smoothing"><span>Smoothing</span></button>
+            <button class="tool" data-pop="pop-vid-encoder"  data-icon="tune"><span>Encoder</span></button>
+            <button class="tool primary" id="vid-run"        data-icon="run"><span>Run</span></button>
+            <button class="tool hidden" id="vid-save"        data-icon="save"><span>Save</span></button>
+        </div>
+    </footer>
+
+    <!-- ======================= popovers ======================= -->
+    <!-- Anchored above the tool bar by popover.js. Each panel holds the real
+         controls; the engine modules find them by the same ids as before. -->
+    <div class="pop-layer" id="pop-layer">
+
+        <!-- The notch lives out here rather than as a ::after on the panel: a
+             panel scrolls its own contents, and an overflow container clips
+             anything drawn outside its box. -->
+        <div class="pop-arrow" id="pop-arrow" hidden></div>
+
+        <!-- ---- palettes ---- -->
+        <div class="pop" id="pop-pal-delete" hidden>
+            <h3>Delete palette</h3>
+            <p class="hint">This removes <strong id="pal-delete-name">—</strong> and its
+                <span id="pal-delete-count">0</span> colours. Palettes live only on this device,
+                so there is no copy elsewhere.</p>
+            <div id="pal-delete-swatches" class="swatches"></div>
+            <button id="pal-delete-confirm" class="red big">Delete permanently</button>
+            <p class="hint">You will get one chance to undo it.</p>
+        </div>
+
+        <div class="pop" id="pop-pal-add" hidden>
+            <h3>Add colour</h3>
+            <div id="pal-picker-mount"></div>
+            <button id="pal-add" class="big">Add to palette</button>
+        </div>
+
+        <div class="pop" id="pop-pal-list" hidden>
+            <h3>Add several</h3>
+            <input type="text" id="pal-hexlist" placeholder="#ff0000, #00ff00, #0000ff">
+            <button id="pal-add-list" class="big">Add list</button>
+            <p class="hint">Comma or space separated. Malformed entries are skipped.</p>
+        </div>
+
+        <div class="pop" id="pop-pal-io" hidden>
+            <h3>Backup &amp; transfer</h3>
+            <button id="pal-export" class="ghost big">Export all (.json)</button>
+            <button id="pal-import-btn" class="ghost big">Import…</button>
+            <input type="file" id="pal-import" accept="application/json,.json" class="hidden">
+            <p class="hint">Import merges rather than overwrites — same-named palettes are kept
+                side by side.</p>
+        </div>
+
+        <!-- ---- extract ---- -->
+        <div class="pop" id="pop-ex-method" hidden>
+            <h3>Method</h3>
+            <select id="ex-method">
+                <option value="peaks">Frequency peaks — count pixels in the colour cube</option>
+                <option value="kmeans">k-means++ — cluster the colours</option>
+            </select>
+        </div>
+
+        <div class="pop" id="pop-ex-count" hidden>
+            <h3>Colours to extract <span id="ex-count-val" class="val">8</span></h3>
+            <input type="range" id="ex-count" min="2" max="32" value="8">
+        </div>
+
+        <div class="pop" id="pop-ex-tune" hidden>
+            <h3>Tuning</h3>
+            <div id="ex-peak-controls">
+                <div class="field">
+                    <label for="ex-radius">Matching radius <span id="ex-radius-val" class="val">0</span></label>
+                    <input type="range" id="ex-radius" min="0" max="15" value="0">
+                    <p class="hint" id="ex-radius-note"></p>
+                </div>
+                <div class="field">
+                    <label for="ex-sep">Minimum distance <span id="ex-sep-val" class="val">auto</span></label>
+                    <!-- min is -1, not 0: -1 is the "auto" sentinel, and a range input
+                         silently clamps values below its min. 0 means suppression off. -->
+                    <input type="range" id="ex-sep" min="-1" max="96" value="-1">
+                    <p class="hint">Without this the top scores are all neighbours of one peak and
+                        you get several shades of the same colour. Leftmost is <em>auto</em>; one
+                        notch right is <em>0</em>, which switches suppression off.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="pop" id="pop-ex-save" hidden>
+            <h3>Save palette</h3>
+            <div id="ex-breakdown" class="hint"></div>
+            <button id="ex-remove-mode" class="yellow">Remove…</button>
+            <input type="text" id="ex-name" placeholder="Palette name">
+            <button id="ex-save" class="green big" disabled>Save palette</button>
+        </div>
+
+        <!-- ---- photo ---- -->
+        <div class="pop" id="pop-ph-palette" hidden>
+            <h3>Palette</h3>
+            <select id="ph-palette"></select>
+        </div>
+
+        <div class="pop" id="pop-ph-blocks" hidden>
+            <h3>Pixel size <span id="ph-blocks" class="badge"></span></h3>
+            <!-- Bounds are placeholders: blocksize.js replaces them from the
+                 image's own shape as soon as one is loaded. -->
+            <div class="field">
+                <label for="ph-bw">Width <span id="ph-bw-val" class="val">192</span></label>
+                <input type="range" id="ph-bw" min="32" max="1920" value="192">
+            </div>
+            <div class="field">
+                <label for="ph-bh">Height <span id="ph-bh-val" class="val">108</span></label>
+                <input type="range" id="ph-bh" min="32" max="1920" value="108">
+            </div>
+            <p class="hint">Aspect ratio is locked: moving one holds the other while you drag.
+                The limits come from the image itself — from 32 blocks on its shorter side up to
+                1920 on the longer one and 1080 on the shorter, and never more blocks than the
+                source has pixels.</p>
+        </div>
+
+        <div class="pop" id="pop-ph-rgb" hidden>
+            <h3>RGB offsets</h3>
+            <div class="field">
+                <label for="ph-r">Red <span id="ph-r-val" class="val r">0</span></label>
+                <input type="range" id="ph-r" min="-255" max="255" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-g">Green <span id="ph-g-val" class="val g">0</span></label>
+                <input type="range" id="ph-g" min="-255" max="255" value="0">
+            </div>
+            <div class="field">
+                <label for="ph-b">Blue <span id="ph-b-val" class="val b">0</span></label>
+                <input type="range" id="ph-b" min="-255" max="255" value="0">
+            </div>
+        </div>
+
+        <div class="pop" id="pop-ph-live" hidden>
+            <h3>Live preview</h3>
+            <label class="check"><input type="checkbox" id="ph-live" checked> Re-render as I drag</label>
+            <p class="hint">Turn off on a slow device, then use Render when you are ready.</p>
+        </div>
+
+        <!-- ---- video ---- -->
+        <div class="pop" id="pop-vid-palette" hidden>
+            <h3>Palette</h3>
+            <select id="vid-palette"></select>
+        </div>
+
+        <div class="pop" id="pop-vid-fps" hidden>
+            <h3>Frame rate <span id="vid-fps-val" class="val">24</span></h3>
+            <!-- Index into FPS_STEPS in video.js, so the slider can only land on
+                 a real frame rate. -->
+            <input type="range" id="vid-fps" min="0" max="9" step="1" value="3">
+            <datalist id="fps-marks"></datalist>
+            <label class="check"><input type="checkbox" id="vid-hold" checked>
+                Encode at a playable frame rate</label>
+            <p class="hint" id="vid-hold-note"></p>
+        </div>
+
+        <div class="pop" id="pop-vid-blocks" hidden>
+            <h3>Pixel size <span id="vid-blocks" class="badge"></span></h3>
+            <!-- Bounds are placeholders: blocksize.js replaces them from the
+                 clip's own shape as soon as one is loaded. -->
+            <div class="field">
+                <label for="vid-bw">Width <span id="vid-bw-val" class="val">192</span></label>
+                <input type="range" id="vid-bw" min="32" max="1920" value="192">
+            </div>
+            <div class="field">
+                <label for="vid-bh">Height <span id="vid-bh-val" class="val">108</span></label>
+                <input type="range" id="vid-bh" min="32" max="1920" value="108">
+            </div>
+            <p class="hint">Aspect ratio is locked: moving one holds the other while you drag.
+                The limits come from the clip itself — from 32 blocks on its shorter side up to
+                1920 on the longer one and 1080 on the shorter. Large grids cost memory and time
+                on video.</p>
+        </div>
+
+        <div class="pop" id="pop-vid-rgb" hidden>
+            <h3>RGB offsets</h3>
+            <div class="field">
+                <label for="vid-r">Red <span id="vid-r-val" class="val r">0</span></label>
+                <input type="range" id="vid-r" min="-255" max="255" value="0">
+            </div>
+            <div class="field">
+                <label for="vid-g">Green <span id="vid-g-val" class="val g">0</span></label>
+                <input type="range" id="vid-g" min="-255" max="255" value="0">
+            </div>
+            <div class="field">
+                <label for="vid-b">Blue <span id="vid-b-val" class="val b">0</span></label>
+                <input type="range" id="vid-b" min="-255" max="255" value="0">
+            </div>
+        </div>
+
+        <div class="pop" id="pop-vid-smooth" hidden>
+            <h3>Smoothing <span id="vid-smooth-val" class="val">0</span>%</h3>
+            <input type="range" id="vid-smooth" min="0" max="99" value="0">
+            <p class="hint">Temporal blend across frames, so it changes the render rather than the
+                still above: s<sub>t</sub> = (1−α)·c<sub>t</sub> + α·s<sub>t−1</sub>.</p>
+        </div>
+
+        <div class="pop" id="pop-vid-encoder" hidden>
+            <h3>Encoder</h3>
+            <label class="check"><input type="checkbox" id="vid-recorder"> Force MediaRecorder</label>
+            <p class="hint">Off: WebCodecs writes MP4 with exact timestamps, faster than real time.
+                On: the older path, which records in real time and can drop frames.</p>
+            <label class="check"><input type="checkbox" id="vid-exact"> Exact box-filter downscale</label>
+            <p class="hint">Off: the GPU scales each frame — much faster, minutely different.
+                On: Original legacy pipeline of v1. </p>
+        </div>
+    </div>
+
+    <!-- File inputs live outside the bars: the tool buttons click them. -->
+    <input type="file" id="ex-file"  accept="image/*" class="hidden">
+    <input type="file" id="ph-file"  accept="image/*" class="hidden">
+    <input type="file" id="vid-file" accept="video/mp4,video/webm,video/*" class="hidden">
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

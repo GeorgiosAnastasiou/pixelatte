@@ -494,7 +494,6 @@
             // --- PALETTE GENERATION (K-MEANS) ---
             /**
              * Minimal K-Means implementation
-             * Source: Adapted from various public gists.
              * @param {Array<Array<number>>} data - Array of points e.g., [[r,g,b], [r,g,b], ...]
              * @param {number} k - Number of clusters
              * @returns {Array<Array<number>>} - Array of centroids e.g., [[r,g,b], ...]
@@ -557,7 +556,7 @@
                                 Math.round(clusters[j].sum[2] / clusters[j].count)
                             ];
                         }
-                        // If a cluster becomes empty, re-initialize it (simple way)
+                        // If a cluster becomes empty, re-initialize it 
                         else {
                             centroids[j] = data[Math.floor(Math.random() * data.length)];
                         }

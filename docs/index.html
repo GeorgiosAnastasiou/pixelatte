@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixelator — pixelate photos and video against a palette you control</title>
+<meta name="description" content="A pixel-art tool that runs entirely in the browser. Pixelate photos and video against a palette you choose or extract from an image. Offline, no account, nothing uploaded.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23111827'/%3E%3Crect x='2' y='2' width='6' height='6' fill='%239BBC0F'/%3E%3Crect x='8' y='8' width='6' height='6' fill='%2360A5FA'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<header class="masthead">
+    <div class="wrap">
+        <p class="wordmark">PIXELATOR</p>
+        <h1>Pixelate photos and video against a palette you control.</h1>
+        <p class="lede">Set the block grid, pick the colours it is allowed to use, and watch the
+            result redraw as you drag. It runs in the browser with no server behind it: your
+            images are never uploaded, and there is no account to make.</p>
+        <div class="actions">
+            <a class="btn" href="app/">Open the app</a>
+            <a class="btn ghost" href="https://github.com/GeorgiosAnastasiou/video_pixelator">Source on GitHub</a>
+        </div>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <section id="demo">
+        <h2>Try it here</h2>
+        <div class="demo">
+            <div class="demo-frame">
+                <canvas id="demo-canvas" width="720" height="460"
+                        aria-label="A sunset scene, pixelated to the current block size and palette"></canvas>
+            </div>
+
+            <div class="demo-controls">
+                <div class="field">
+                    <label for="demo-blocks">Block grid <span class="val" id="demo-blocks-val">104 x 66</span></label>
+                    <input type="range" id="demo-blocks" min="8" max="200" value="104">
+                </div>
+                <div class="field">
+                    <label>Palette</label>
+                    <div class="pal-list" id="demo-palettes"></div>
+                </div>
+            </div>
+        </div>
+        <p class="demo-note">The slider and the swatches drive the app's own
+            <code>processStill()</code> — this page imports <code>core.js</code> from the copy of
+            the app hosted alongside it, so there is no separate demo implementation that could
+            flatter the real one. The source image is drawn in code, not loaded.</p>
+    </section>
+
+    <section id="what">
+        <h2>What it is</h2>
+        <div class="spec">
+            <dl>
+                <dt>Runs on</dt>
+                <dd>Any current browser. The Android build is a Capacitor wrapper around these
+                    same files, kept outside this repository.</dd>
+
+                <dt>Network</dt>
+                <dd>None. No uploads, no analytics, no fonts or scripts fetched from anywhere.
+                    It works with the network off.</dd>
+
+                <dt>Accounts</dt>
+                <dd>None. Palettes live in <code>localStorage</code> as plain
+                    <code>{ name: ["#RRGGBB", …] }</code>, and export to a JSON file you can move
+                    between devices yourself.</dd>
+
+                <dt>Input</dt>
+                <dd>Images for the photo and extract screens; MP4 or WebM for video.</dd>
+
+                <dt>Output</dt>
+                <dd>PNG for stills. MP4 for video where WebCodecs is available, WebM otherwise.</dd>
+
+                <dt>Ships with</dt>
+                <dd>Gameboy, CGA and Grayscale palettes, six themes, and no runtime dependencies
+                    beyond one vendored MP4 muxer.</dd>
+
+                <dt>Tests</dt>
+                <dd>59 checks over the pixelation, palette-mapping, blending and extraction code,
+                    runnable with <code>node</code> and no test framework.</dd>
+            </dl>
+        </div>
+    </section>
+
+    <section id="how">
+        <h2>How it works</h2>
+        <div class="cols">
+            <div>
+                <h3>Pixelation</h3>
+                <p>Each image is reduced to a grid of blocks with a box filter — every block is
+                    the true average of the pixels underneath it, not a sample of one of them —
+                    and each block is then replaced by the nearest colour in the palette, measured
+                    in RGB.</p>
+                <p>Nearest-colour search is exact for small jobs. Above roughly 40,000 pixels per
+                    frame, or palettes over 24 colours, it builds a lookup table over a 32×32×32
+                    colour cube instead: a fixed cost up front, then one probe per pixel. The
+                    threshold is where the table stops being the more expensive option.</p>
+                <p>The two block-size sliders are locked to the source aspect ratio. Dragging one
+                    drives the other and freezes it for the duration of the gesture, so a second
+                    finger cannot fight the first.</p>
+                <p>Their limits come from the image rather than from a fixed list: the grid runs
+                    from 32 blocks across the picture's shorter side up to 1920 across its longer
+                    one, so a 16:9 photo offers 57–1920 horizontally against 32–1080 vertically.
+                    Both sliders therefore hit their ends together, and neither can be dragged
+                    somewhere the other cannot follow.</p>
+            </div>
+            <div>
+                <h3>Where palettes come from</h3>
+                <p>You can build one by hand, paste a list of hex codes, or pull one out of an
+                    image on the Extract screen, which offers two different answers to
+                    "what colours is this picture made of".</p>
+                <p><strong>Frequency peaks</strong> counts pixels in the colour cube and takes the
+                    most populous. A matching radius lets nearby shades reinforce one another
+                    rather than compete, and a minimum separation stops the result being six
+                    versions of the same blue.</p>
+                <p><strong>k-means++</strong> clusters the colours instead, which gives a more
+                    even spread across the image at the cost of picking colours that may not
+                    literally appear in it.</p>
+                <p>Neither is saved until you press save, so you can re-extract as often as you
+                    like while you compare.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="video">
+        <h2>Video</h2>
+        <p>Video is the part that has to be careful. Frames are decoded, reduced, blended and
+            encoded one at a time rather than being collected first, which matters more than it
+            sounds: the temporal smoothing only needs the previous blended frame to produce the
+            next, so a whole clip never has to exist in memory at once.</p>
+        <div class="pull">
+            A 3-minute clip at 1024 blocks wide: <strong>~28.5 GB</strong> held as a frame stack,
+            <strong>~13 MB</strong> streamed — with identical output.
+        </div>
+        <p>Where the browser supports WebCodecs, frames are written to MP4 with explicit
+            timestamps, so encoding runs as fast as the machine manages and the output timeline is
+            exact. Where it does not, it falls back to <code>MediaRecorder</code>, which timestamps
+            by wall clock and therefore records in real time; the app says which path it took and
+            warns you if it fell behind.</p>
+        <p>Low frame rates are treated as a look rather than a limitation. An 8 fps result is
+            written as a 24 fps file with each frame held three times — visually identical, but it
+            plays properly everywhere instead of stuttering in players that dislike 8 fps
+            containers.</p>
+    </section>
+
+    <section id="running">
+        <h2>Running it yourself</h2>
+        <p>The app is static files. Clone the repository and serve the folder:</p>
+<pre><code>git clone https://github.com/GeorgiosAnastasiou/video_pixelator
+cd video_pixelator
+python3 -m http.server 8000</code></pre>
+        <p>Then open <code>http://localhost:8000</code>. A plain file:// open will not work —
+            the app is made of ES modules, which browsers refuse to load from the filesystem.</p>
+        <p>The tests need only Node:</p>
+<pre><code>node js/core.test.js
+node js/extract.test.js</code></pre>
+        <p>There is no prebuilt Android package to download, and the Capacitor project that
+            produces one is not part of this repository — it is a thin wrapper that copies these
+            same files into a WebView, so anything the app does on Android it does here first.</p>
+    </section>
+
+</div>
+
+<footer>
+    <div class="wrap">
+        <p>Pixelator is a personal project by
+            <a href="https://github.com/GeorgiosAnastasiou">Georgios Anastasiou</a>. It began as a
+            Python script, became a notebook, and is now a browser app that keeps the same
+            pipeline.</p>
+        <p><a href="https://github.com/GeorgiosAnastasiou/video_pixelator">Source and issues on
+            GitHub</a> · <a href="app/">Open the app</a></p>
+    </div>
+</footer>
+
+<script type="module" src="js/demo.js"></script>
+</body>
+</html>
