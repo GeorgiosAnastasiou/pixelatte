@@ -1,28 +1,54 @@
-# Logs
+# Test media recovered from git history for local testing — 50 MB, deliberately
+# not re-committed (it was removed from the repo previously).
+samples/
+
+# ---- generated ----
+# Staged copies of the app. Both are rebuilt by a script and committing either
+# would mean the same files living in the repo three times.
+#   www/       <- sync-web.sh, for Capacitor
+# docs/app/ is deliberately NOT ignored: GitHub Pages serves the site from the
+# docs/ folder, so the copy under it has to be committed to be published.
+www/
+
+# ---- Android / Gradle ----
+# Build output. android/ itself is committed — the project configuration, the
+# manifest and the icons are real work — but nothing Gradle regenerates is.
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/.gradle/
+android/.idea/
+android/app/release/
+android/captures/
+*.iml
+
+# Machine-specific: points at this laptop's Android SDK. Anyone cloning this
+# generates their own, and committing it breaks their build.
+android/local.properties
+
+# ---- signing material — never commit ----
+# A leaked upload key means someone else can publish updates to your app, and
+# Play Store keys cannot be rotated. Keep these off disk-in-repo entirely.
+*.keystore
+*.jks
+keystore.properties
+google-services.json
+
+# ---- node ----
+node_modules/
+
+# ---- editor / OS ----
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.swp
+*.swo
+
+# ---- logs ----
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Test media recovered from git history for local testing — 50 MB, deliberately
-# not re-committed (it was removed from the repo previously).
-samples/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
