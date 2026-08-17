@@ -47,6 +47,15 @@ let smoothMask = null;     // where the brush has asked for smoothing, 0-100
 let filterCache = null;    // { key, rgb } — the filtered grid, which is not cheap
 let view = null;
 let painting = false;
+/**
+ * While held, the picture is rendered as though the RGB offsets were zero.
+ *
+ * A flag rather than temporarily zeroing the sliders: moving them would fire
+ * their change events, redraw their readouts, and leave the panel flickering
+ * between two states. This way the controls stay exactly where they were and
+ * only the render differs.
+ */
+let compareNeutral = false;
 let drawPicker = null;
 let drawColor = null;      // packed RGB, or 0 for the eraser, or null if unset
 
@@ -79,9 +88,12 @@ const future = [];
 const surface = document.createElement('canvas');
 let surfaceW = 0, surfaceH = 0;
 
+const rgbOffsets = () =>
+    [Number($('ph-r').value), Number($('ph-g').value), Number($('ph-b').value)];
+
 const settings = () => ({
     ...blocks.dims(),
-    offsets: [Number($('ph-r').value), Number($('ph-g').value), Number($('ph-b').value)],
+    offsets: compareNeutral ? [0, 0, 0] : rgbOffsets(),
     paletteName: $('ph-palette').value,
 });
 
@@ -460,6 +472,52 @@ function initDraw() {
     onPalettesChanged(renderDrawSwatches);
     $('ph-palette').addEventListener('change', renderDrawSwatches);
     renderDrawSwatches();
+}
+
+/* ----------------------------------------------------------------- rgb */
+
+/** Put the three sliders back, and repaint. */
+function setRgbOffsets([r, g, b]) {
+    $('ph-r').value = String(r); $('ph-g').value = String(g); $('ph-b').value = String(b);
+    $('ph-r-val').textContent = String(r);
+    $('ph-g-val').textContent = String(g);
+    $('ph-b-val').textContent = String(b);
+    render();
+}
+
+function initRgbButtons() {
+    /**
+     * Reset is undoable, so it joins the same history as everything else.
+     *
+     * It is not a stroke, so it is not tagged as one: a change of block grid
+     * wipes stroke steps, and there is no reason losing the grid should also
+     * lose the fact that the offsets were reset.
+     */
+    $('ph-rgb-reset').addEventListener('click', () => {
+        const before = rgbOffsets();
+        if (before.every((v) => v === 0)) { log('The offsets are already at 0.'); return; }
+        setRgbOffsets([0, 0, 0]);
+        pushHistory({
+            kind: 'settings',
+            undo: () => setRgbOffsets(before),
+            redo: () => setRgbOffsets([0, 0, 0]),
+        });
+        log(`Reset the RGB offsets from ${before.join(', ')}.`);
+    });
+
+    // Held, not toggled: a comparison you have to keep holding cannot be left
+    // switched on by accident and mistaken for the real thing.
+    const btn = $('ph-rgb-compare');
+    const show = (neutral) => {
+        if (compareNeutral === neutral) return;
+        compareNeutral = neutral;
+        btn.classList.toggle('on-toggle', neutral);
+        render();
+    };
+    btn.addEventListener('pointerdown', (e) => { e.preventDefault(); show(true); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) {
+        btn.addEventListener(ev, () => show(false));
+    }
 }
 
 /* ---------------------------------------------------------------- crop */
@@ -1021,6 +1079,7 @@ export function init() {
     bindSlider('ph-r', 'ph-r-val', scheduleRender);
     bindSlider('ph-g', 'ph-g-val', scheduleRender);
     bindSlider('ph-b', 'ph-b-val', scheduleRender);
+    initRgbButtons();
     $('ph-palette').addEventListener('change', scheduleRender);
 
     initBrush();

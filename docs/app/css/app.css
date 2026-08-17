@@ -1238,3 +1238,24 @@ input.cp-slider::-moz-range-thumb {
 .media.viewport.crop-e, .media.viewport.crop-w   { cursor: ew-resize; }
 .media.viewport.crop-nw, .media.viewport.crop-se { cursor: nwse-resize; }
 .media.viewport.crop-ne, .media.viewport.crop-sw { cursor: nesw-resize; }
+
+
+/* ---- panels over a picture, on a phone ----------------------------------
+   Below the desktop breakpoint a popover rises out of the tool bar and covers
+   the lower half of the screen — which is where the picture is. Rather than
+   make the panel translucent and hard to read, the stage gives up the space:
+   it shrinks its own box while a panel is open, the view re-fits the image into
+   what is left, and the change being made stays visible while it is made.
+
+   Above the breakpoint the panel opens beside a rail and covers nothing, so
+   none of this applies. */
+@media (max-width: 899px) {
+    .pop { max-height: min(46vh, 420px); }
+
+    .app[data-pop-open] .stage-media {
+        padding-bottom: 48vh;
+        transition: padding-bottom 0.12s ease-out;
+    }
+    /* The welcome art is the screen itself and has no settings to preview. */
+    .app[data-pop-open] .stage-media.bleed { padding-bottom: 0; }
+}

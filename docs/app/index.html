@@ -618,6 +618,13 @@
                 <label for="ph-b">Blue <span id="ph-b-val" class="val b">0</span></label>
                 <input type="range" id="ph-b" min="-255" max="255" value="0">
             </div>
+            <div class="shape-row two">
+                <button type="button" id="ph-rgb-compare" class="shape">Hold to compare</button>
+                <button type="button" id="ph-rgb-reset" class="shape">Reset to 0</button>
+            </div>
+            <p class="hint">Compare shows the picture with no offsets for as long as the button is
+                held, without changing the sliders. Reset puts all three back to 0 and can be
+                undone.</p>
         </div>
 
         <div class="pop" id="pop-ph-brush" hidden>
@@ -676,8 +683,10 @@
         </div>
 
         <div class="pop" id="pop-ph-draw" hidden>
-            <h3>Draw</h3>
-            <label class="check"><input type="checkbox" id="ph-draw-on"> Draw on</label>
+            <div class="pop-sticky">
+                <h3>Draw</h3>
+                <label class="check"><input type="checkbox" id="ph-draw-on"> Draw on</label>
+            </div>
             <p class="hint">Drawing sets a block to a colour outright — the palette matcher does
                 not get a say on those blocks. Turning the brush on turns this off; they cannot
                 both own the pointer.</p>

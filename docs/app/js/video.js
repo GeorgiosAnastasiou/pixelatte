@@ -504,7 +504,8 @@ export function init() {
         videoFile = file;
         sourceName = file.name.replace(/\.[^.]+$/, '');
         try {
-            const frame = await firstFrame(file);
+            log(`Reading ${file.name} (${(file.size / 1048576).toFixed(0)} MB)…`);
+            const frame = await firstFrame(file, (msg) => log(msg));
             frameData = frame.imageData;
             meta = { width: frame.width, height: frame.height, duration: frame.duration };
             setMediaLoaded('video', true);

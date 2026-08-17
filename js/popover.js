@@ -69,6 +69,21 @@ function position(panel, trigger) {
     }
 }
 
+/**
+ * Tell the shell a panel is up.
+ *
+ * On a phone the panel covers the lower half of the screen, which is where the
+ * picture was. The stage reads this and shrinks its own box, so the image
+ * re-fits into the strip that is still visible and the effect of whatever the
+ * panel is changing can actually be seen while changing it.
+ */
+function markOpen(open) {
+    const app = document.getElementById('app');
+    if (!app) return;
+    if (open) app.dataset.popOpen = '';
+    else delete app.dataset.popOpen;
+}
+
 export function close() {
     if (!isOpen()) return;
     const arrow = document.getElementById('pop-arrow');
@@ -78,6 +93,7 @@ export function close() {
     openTrigger.setAttribute('aria-expanded', 'false');
     openPanel = null;
     openTrigger = null;
+    markOpen(false);
 }
 
 export function open(panel, trigger) {
@@ -89,6 +105,10 @@ export function open(panel, trigger) {
     openTrigger = trigger;
     trigger.classList.add('open');
     trigger.setAttribute('aria-expanded', 'true');
+    markOpen(true);
+    // Positioned after the stage has been told to shrink, so the panel is
+    // measured against the layout it will actually sit in.
+    requestAnimationFrame(() => position(panel, trigger));
     position(panel, trigger);
 }
 
