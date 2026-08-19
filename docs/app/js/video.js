@@ -17,7 +17,7 @@ import {
     applyOffsets, boxDownsample, mapToPalette, mapToPaletteExact, blockHeight,
 } from './core.js';
 import { chooseMapper, streamingMemoryMB } from './pipeline.js';
-import { spatialSmooth, maxRadius } from './smooth.js';
+import { spatialSmooth, maxSize, windowFor } from './smooth.js';
 import { firstFrame, renderStill } from './preview.js';
 import * as encodeWC from './encode.js';
 import { getPaletteRgb, onPalettesChanged } from './palettes.js';
@@ -67,7 +67,8 @@ const settings = () => ({
     ...blocks.dims(),
     alpha: Number($('vid-smooth').value) / 100,
     smoothMode: $('vid-smode').querySelector('[aria-pressed="true"]')?.dataset.smode ?? 'despeckle',
-    smoothRadius: Number($('vid-sradius').value),
+    smoothSize: Number($('vid-sradius').value) + 1,
+    smoothShape: $('vid-sshape').querySelector('[aria-pressed="true"]')?.dataset.sshape ?? 'square',
     smoothStrength: Number($('vid-sstrength').value) / 100,
     offsets: [Number($('vid-r').value), Number($('vid-g').value), Number($('vid-b').value)],
     paletteName: $('vid-palette').value,
@@ -92,7 +93,8 @@ function renderPreview() {
     const { lut } = chooseMapper(palette, cfg.bw * (cfg.bh || 1));
     const { bw, bh } = renderStill($('vid-canvas'), frameData,
         { bw: cfg.bw, bh: cfg.bh, offsets: cfg.offsets, palette, lut,
-          smooth: { radius: cfg.smoothRadius, mode: cfg.smoothMode, strength: cfg.smoothStrength } });
+          smooth: { size: cfg.smoothSize, shape: cfg.smoothShape, mode: cfg.smoothMode,
+                    strength: cfg.smoothStrength } });
 
     $('vid-out').classList.add('hidden');
     $('vid-canvas').classList.remove('hidden');
@@ -282,9 +284,9 @@ async function streamProcess(file, cfg, onProgress) {
         // Spatial before temporal, and both before the palette. Cleaning each
         // frame first means the blend carries clean frames forward instead of
         // averaging a speck across the next several.
-        const cur = cfg.smoothRadius >= 1
+        const cur = cfg.smoothSize > 1
             ? spatialSmooth(raw, bw, bh,
-                { radius: cfg.smoothRadius, mode: cfg.smoothMode, strength: cfg.smoothStrength })
+                { size: cfg.smoothSize, shape: cfg.smoothShape, mode: cfg.smoothMode, strength: cfg.smoothStrength })
             : raw;
 
         // Temporal blend against the running state (pre-palette, as required).
@@ -430,7 +432,11 @@ async function run() {
 }
 
 export function init() {
-    onPalettesChanged((palettes) => fillPaletteSelect($('vid-palette'), palettes));
+    // Same reasoning as the photo tab: editing the palette in use has to show.
+    onPalettesChanged((palettes) => {
+        fillPaletteSelect($('vid-palette'), palettes);
+        schedulePreview();
+    });
     attachPalettePicker('vid-palette');
 
     const paintFps = () => {
@@ -476,9 +482,13 @@ export function init() {
         $('vid-smode-note').textContent = SMODE_NOTES[mode] ?? '';
         if (meta.width) {
             const d = blocks.dims();
-            $('vid-sradius').max = String(maxRadius(d.bw, d.bh));
+            $('vid-sradius').max = String(maxSize(d.bw, d.bh) - 1);
         }
-        setStrengthActive('vid-sstrength', Number($('vid-sradius').value) >= 1);
+        const size = Number($('vid-sradius').value) + 1;
+        const shape = $('vid-sshape').querySelector('[aria-pressed="true"]')?.dataset.sshape ?? 'square';
+        const [wx, wy] = windowFor(size, shape);
+        $('vid-sradius-val').textContent = `${wx} x ${wy}`;
+        setStrengthActive('vid-sstrength', size > 1);
     };
     for (const btn of $('vid-smode').querySelectorAll('.shape')) {
         btn.addEventListener('click', () => {
@@ -490,6 +500,15 @@ export function init() {
         });
     }
     bindSlider('vid-sradius', 'vid-sradius-val', () => { paintSpatial(); schedulePreview(); });
+    for (const btn of $('vid-sshape').querySelectorAll('.shape')) {
+        btn.addEventListener('click', () => {
+            for (const o of $('vid-sshape').querySelectorAll('.shape')) {
+                o.setAttribute('aria-pressed', String(o === btn));
+            }
+            paintSpatial();
+            schedulePreview();
+        });
+    }
     bindSlider('vid-sstrength', 'vid-sstrength-val', schedulePreview);
     paintSpatial();
     bindSlider('vid-r', 'vid-r-val', schedulePreview);

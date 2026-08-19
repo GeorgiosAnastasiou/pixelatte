@@ -304,6 +304,7 @@ html, body {
 /* Brush shape picker — four exclusive choices, so they read as one control. */
 .shape-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); margin: var(--s2) 0; }
 .shape-row.two { grid-template-columns: repeat(2, 1fr); }
+.shape-row.three { grid-template-columns: repeat(3, 1fr); }
 .shape-row .shape {
     padding: var(--s2) var(--s1);
     background: var(--panel-2); color: var(--muted);

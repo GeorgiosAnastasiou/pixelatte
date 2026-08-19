@@ -776,9 +776,21 @@
                 <button type="button" class="shape" data-smode="soften" aria-pressed="false">Soften</button>
             </div>
             <p class="hint" id="ph-smode-note"></p>
+            <div class="shape-row three" id="ph-sshape" role="radiogroup" aria-label="Window shape">
+                <button type="button" class="shape" data-sshape="square" aria-pressed="true">Square</button>
+                <button type="button" class="shape" data-sshape="row" aria-pressed="false">Row</button>
+                <button type="button" class="shape" data-sshape="column" aria-pressed="false">Column</button>
+            </div>
+            <p class="hint">A row samples sideways only and a column downwards only, so each
+                leaves streaks running its own way alone. At their shortest they are the 2x1 and
+                1x2 pairs.</p>
             <div class="field">
-                <label for="ph-sradius">Radius <span id="ph-sradius-val" class="val">0</span></label>
-                <input type="range" id="ph-sradius" min="0" max="20" value="0">
+                <label for="ph-sradius">Area <span id="ph-sradius-val" class="val">1 x 1</span></label>
+                <!-- One step per whole window: 0 is a single block and does
+                     nothing, 1 is 2x2, 2 is 3x3. Built on a radius this could
+                     only make odd windows — 1x1 then straight to 3x3 — which is
+                     why the first notch used to change so much. -->
+                <input type="range" id="ph-sradius" min="0" max="19" step="1" value="0">
             </div>
             <div class="field">
                 <label for="ph-sstrength">Strength <span id="ph-sstrength-val" class="val">100</span>%</label>
@@ -888,9 +900,21 @@
                 <button type="button" class="shape" data-smode="soften" aria-pressed="false">Soften</button>
             </div>
             <p class="hint" id="vid-smode-note"></p>
+            <div class="shape-row three" id="vid-sshape" role="radiogroup" aria-label="Window shape">
+                <button type="button" class="shape" data-sshape="square" aria-pressed="true">Square</button>
+                <button type="button" class="shape" data-sshape="row" aria-pressed="false">Row</button>
+                <button type="button" class="shape" data-sshape="column" aria-pressed="false">Column</button>
+            </div>
+            <p class="hint">A row samples sideways only and a column downwards only, so each
+                leaves streaks running its own way alone. At their shortest they are the 2x1 and
+                1x2 pairs.</p>
             <div class="field">
-                <label for="vid-sradius">Radius <span id="vid-sradius-val" class="val">0</span></label>
-                <input type="range" id="vid-sradius" min="0" max="20" value="0">
+                <label for="vid-sradius">Area <span id="vid-sradius-val" class="val">1 x 1</span></label>
+                <!-- One step per whole window: 0 is a single block and does
+                     nothing, 1 is 2x2, 2 is 3x3. Built on a radius this could
+                     only make odd windows — 1x1 then straight to 3x3 — which is
+                     why the first notch used to change so much. -->
+                <input type="range" id="vid-sradius" min="0" max="19" step="1" value="0">
             </div>
             <div class="field">
                 <label for="vid-sstrength">Strength <span id="vid-sstrength-val" class="val">100</span>%</label>

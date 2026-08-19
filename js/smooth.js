@@ -24,49 +24,98 @@
 //   soften (mean)       A distance-weighted average. Reduces detail everywhere,
 //                       edges included. Use it when that is the point.
 //
+// Windows are described by their two edge lengths, not by a radius. A radius is
+// symmetric by construction, so it can only ever produce odd windows: 1x1, then
+// straight to 3x3, with no 2x2 in between — which is why the first notch of the
+// old control changed far more than any notch after it. Edge lengths give every
+// size, and give non-square windows for free: a 3x1 row smooths along a
+// horizontal band without touching anything vertically.
+//
 // Cost: the mean is separable and computed with a sliding window, so it is
-// O(blocks) whatever the radius — radius 20 costs what radius 2 costs. The
-// median is not separable and is O(blocks x radius^2), which is why its radius
-// is capped rather than merely discouraged.
+// O(blocks) whatever the size. The median is not separable and grows with the
+// window's area, which is why its size is capped rather than merely discouraged.
 
 export const MODES = ['despeckle', 'soften'];
+export const SHAPES = ['square', 'row', 'column'];
 
 /** Beyond this a median costs more than it is worth at interactive speed. */
-export const MAX_MEDIAN_RADIUS = 8;
+export const MAX_MEDIAN_SIZE = 17;
 
 /**
- * The largest radius worth offering for a grid.
+ * The largest window worth offering for a grid.
  *
- * A twentieth of the shorter side, which is the shape of the brief: enough to
- * swallow a speck and its immediate surroundings, not enough to turn a frame
- * into a colour field.
+ * A tenth of the shorter side: enough to swallow a speck and its surroundings,
+ * not enough to turn a frame into a colour field.
  */
-export function maxRadius(bw, bh) {
-    return Math.max(1, Math.round(Math.min(bw, bh) / 20));
+export function maxSize(bw, bh) {
+    return Math.max(2, Math.round(Math.min(bw, bh) / 10));
+}
+
+/**
+ * A shape and a length become two edge lengths.
+ *
+ * A row is n wide and one tall, a column the other way about. The 2x1 and 1x2
+ * windows are simply the shortest of each, and there is no reason to special
+ * case them when the general form costs nothing.
+ */
+export function windowFor(size, shape = 'square') {
+    const n = Math.max(1, size);
+    if (shape === 'row') return [n, 1];
+    if (shape === 'column') return [1, n];
+    return [n, n];
 }
 
 const clampIndex = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
 
 /**
- * One separable box pass, horizontally or vertically, with a sliding window.
+ * The offset ranges that make an edge of `size`, as [lo, hi] pairs.
  *
- * The window gains one sample and loses one per step rather than being re-summed,
- * which is what removes the radius from the cost. Edges replicate: the
- * alternative is treating outside as black, which darkens every border.
+ * An odd edge has a centre block and one symmetric range. An even edge has no
+ * centre — 2 blocks cannot be placed evenly around one — so it is built from
+ * the two placements either side and averaged. Taking just one would shift the
+ * picture half a block in that direction, which on a block grid shows.
  */
-function boxPass(src, dst, w, h, r, vertical) {
+function placements(size) {
+    if (size <= 1) return [[0, 0]];
+    if (size % 2 === 1) {
+        const r = (size - 1) / 2;
+        return [[-r, r]];
+    }
+    const h = size / 2;
+    return [[-h, h - 1], [-(h - 1), h]];
+}
+
+/** Mean of one or more grids of the same shape. */
+function average(grids) {
+    if (grids.length === 1) return grids[0];
+    const out = new Float32Array(grids[0].length);
+    for (let i = 0; i < out.length; i++) {
+        let sum = 0;
+        for (const g of grids) sum += g[i];
+        out[i] = sum / grids.length;
+    }
+    return out;
+}
+
+/**
+ * One separable box pass over an explicit offset range, with a sliding window.
+ *
+ * The window gains one sample and loses one per step rather than being
+ * re-summed, which is what keeps the cost independent of the window size. Edges
+ * replicate: treating outside as black darkens every border.
+ */
+function boxPass(src, dst, w, h, lo, hi, vertical) {
     const outer = vertical ? w : h;
     const inner = vertical ? h : w;
     const stride = vertical ? w * 3 : 3;
     const step = vertical ? 3 : w * 3;
-    const span = 2 * r + 1;
+    const span = hi - lo + 1;
 
     for (let o = 0; o < outer; o++) {
         const base = o * step;
         let sr = 0, sg = 0, sb = 0;
 
-        // Prime the window at position 0, with the left edge replicated.
-        for (let k = -r; k <= r; k++) {
+        for (let k = lo; k <= hi; k++) {
             const i = base + clampIndex(k, inner - 1) * stride;
             sr += src[i]; sg += src[i + 1]; sb += src[i + 2];
         }
@@ -75,8 +124,8 @@ function boxPass(src, dst, w, h, r, vertical) {
             const o1 = base + p * stride;
             dst[o1] = sr / span; dst[o1 + 1] = sg / span; dst[o1 + 2] = sb / span;
 
-            const outIdx = base + clampIndex(p - r, inner - 1) * stride;
-            const inIdx = base + clampIndex(p + r + 1, inner - 1) * stride;
+            const outIdx = base + clampIndex(p + lo, inner - 1) * stride;
+            const inIdx = base + clampIndex(p + hi + 1, inner - 1) * stride;
             sr += src[inIdx] - src[outIdx];
             sg += src[inIdx + 1] - src[outIdx + 1];
             sb += src[inIdx + 2] - src[outIdx + 2];
@@ -84,60 +133,82 @@ function boxPass(src, dst, w, h, r, vertical) {
     }
 }
 
-/**
- * Distance-weighted mean.
- *
- * Two box passes per axis rather than one: a single box weights every
- * neighbour equally, which is not what "affected by its neighbours by distance"
- * means and shows as blocky haloes. Two convolved boxes give a triangular
- * falloff — near neighbours count more — and it is still O(blocks).
- */
-export function meanFilter(rgb, bw, bh, radius, passes = 2) {
-    let src = rgb;
-    let a = new Float32Array(rgb.length);
-    let b = new Float32Array(rgb.length);
-    for (let p = 0; p < passes; p++) {
-        boxPass(src, a, bw, bh, radius, false);
-        boxPass(a, b, bw, bh, radius, true);
-        src = b;
-        // Swap so the next pass does not read and write the same buffer.
-        const t = a; a = b; b = t;
-    }
-    return src;
+/** Average of a box pass over every placement of one edge. */
+function passAxis(src, w, h, size, vertical) {
+    if (size <= 1) return src;
+    return average(placements(size).map(([lo, hi]) => {
+        const dst = new Float32Array(src.length);
+        boxPass(src, dst, w, h, lo, hi, vertical);
+        return dst;
+    }));
 }
 
 /**
- * Per-channel median over a square neighbourhood.
+ * Distance-weighted mean over a `sx` by `sy` window.
+ *
+ * Two passes per axis rather than one: a single box weights every neighbour
+ * equally, which is not what "affected by its neighbours by distance" means and
+ * shows as blocky haloes. Two convolved boxes give a triangular falloff, and it
+ * is still O(blocks).
+ *
+ * The two placements of an even edge are averaged per axis rather than across
+ * the whole 2D window. A box pass is linear, so the two are identical, and
+ * doing it per axis is two extra passes rather than four.
+ */
+export function meanFilter(rgb, bw, bh, sx, sy = sx, passes = 2) {
+    if (sx <= 1 && sy <= 1) return rgb;
+    let cur = rgb;
+    for (let p = 0; p < passes; p++) {
+        cur = passAxis(cur, bw, bh, sx, false);
+        cur = passAxis(cur, bw, bh, sy, true);
+    }
+    return cur;
+}
+
+/**
+ * Per-channel median over a `sx` by `sy` window.
  *
  * Per channel rather than a true vector median: a vector median needs the
- * pairwise distances of every candidate in the window and costs far more, for a
- * difference that does not show once the result is snapped to a palette anyway.
+ * pairwise distances of every candidate and costs far more, for a difference
+ * that does not survive being snapped to a palette anyway.
+ *
+ * A median is not linear, so unlike the mean the placements of an even edge
+ * have to be combined across the whole window — every pairing of an x placement
+ * with a y placement — rather than one axis at a time.
  */
-export function medianFilter(rgb, bw, bh, radius) {
-    const r = Math.min(radius, MAX_MEDIAN_RADIUS);
-    const out = new Float32Array(rgb.length);
-    const span = 2 * r + 1;
-    const buf = new Float32Array(span * span);
+export function medianFilter(rgb, bw, bh, sx, sy = sx) {
+    const w = Math.min(sx, MAX_MEDIAN_SIZE);
+    const h = Math.min(sy, MAX_MEDIAN_SIZE);
+    if (w <= 1 && h <= 1) return rgb;
 
-    for (let y = 0; y < bh; y++) {
-        for (let x = 0; x < bw; x++) {
-            const o = (y * bw + x) * 3;
-            for (let c = 0; c < 3; c++) {
-                let n = 0;
-                for (let dy = -r; dy <= r; dy++) {
-                    const yy = clampIndex(y + dy, bh - 1);
-                    for (let dx = -r; dx <= r; dx++) {
-                        const xx = clampIndex(x + dx, bw - 1);
-                        buf[n++] = rgb[(yy * bw + xx) * 3 + c];
+    const grids = [];
+    for (const [ylo, yhi] of placements(h)) {
+        for (const [xlo, xhi] of placements(w)) {
+            const out = new Float32Array(rgb.length);
+            const buf = new Float32Array((yhi - ylo + 1) * (xhi - xlo + 1));
+            for (let y = 0; y < bh; y++) {
+                for (let x = 0; x < bw; x++) {
+                    const o = (y * bw + x) * 3;
+                    for (let c = 0; c < 3; c++) {
+                        let n = 0;
+                        for (let dy = ylo; dy <= yhi; dy++) {
+                            const yy = clampIndex(y + dy, bh - 1);
+                            for (let dx = xlo; dx <= xhi; dx++) {
+                                buf[n++] = rgb[(yy * bw + clampIndex(x + dx, bw - 1)) * 3 + c];
+                            }
+                        }
+                        const win = buf.subarray(0, n);
+                        win.sort();
+                        // An even count has no single middle sample; the two
+                        // either side of the middle are averaged.
+                        out[o + c] = n % 2 ? win[n >> 1] : (win[n / 2 - 1] + win[n / 2]) / 2;
                     }
                 }
-                const win = buf.subarray(0, n);
-                win.sort();
-                out[o + c] = win[n >> 1];
             }
+            grids.push(out);
         }
     }
-    return out;
+    return average(grids);
 }
 
 /**
@@ -146,24 +217,71 @@ export function medianFilter(rgb, bw, bh, radius) {
  * @param {Float32Array} rgb block-resolution triplets, not modified
  * @param {number} bw
  * @param {number} bh
- * @param {{radius:number, mode:string, strength?:number}} opts
- *        strength 0-1 blends the result back towards the original, so the
- *        control is a dial rather than a switch.
+ * @param {{size:number, shape?:string, mode?:string, strength?:number}} opts
+ *        `size` is the long edge of the neighbourhood in blocks: 1 does
+ *        nothing, 2 is a pair, 3 is a triple. `shape` makes that a square, a
+ *        row or a column. `size` may be fractional, in which case the two whole
+ *        sizes either side are blended. `strength` 0-1 blends the result back
+ *        towards the original.
  * @returns {Float32Array} the original array when there is nothing to do
  */
-export function spatialSmooth(rgb, bw, bh, { radius, mode = 'despeckle', strength = 1 } = {}) {
-    const r = Math.floor(radius);
-    if (!(r >= 1) || strength <= 0 || bw < 1 || bh < 1) return rgb;
+export function spatialSmooth(rgb, bw, bh, { size, shape = 'square', mode = 'despeckle', strength = 1 } = {}) {
+    const n = Number(size);
+    if (!(n > 1) || strength <= 0 || bw < 1 || bh < 1) return rgb;
 
-    const filtered = mode === 'soften'
-        ? meanFilter(rgb, bw, bh, r)
-        : medianFilter(rgb, bw, bh, r);
-
+    const filtered = filterAtSize(rgb, bw, bh, n, shape, mode);
     if (strength >= 1) return filtered;
 
     const out = new Float32Array(rgb.length);
-    const s = strength, is = 1 - strength;
-    for (let i = 0; i < rgb.length; i++) out[i] = is * rgb[i] + s * filtered[i];
+    const a = strength, ia = 1 - strength;
+    for (let i = 0; i < rgb.length; i++) out[i] = ia * rgb[i] + a * filtered[i];
+    return out;
+}
+
+/**
+ * Whole-size results, remembered per source grid.
+ *
+ * A fractional size needs the two whole sizes either side of it, and dragging
+ * the slider walks through many fractions of the same pair. Without this, every
+ * step of the drag recomputes two medians over the whole grid. Keyed weakly on
+ * the source array, so the moment the picture changes the cache goes with it.
+ */
+const filterMemo = new WeakMap();
+
+/**
+ * The filter at a possibly fractional size.
+ *
+ * A window is a whole number of blocks, so anything between two sizes is a
+ * blend of the two either side. Kept because the palette match downstream is
+ * itself a step function, and a half step is sometimes what lands a block on
+ * the right side of it.
+ */
+function filterAtSize(rgb, bw, bh, size, shape, mode) {
+    const run = (n) => {
+        if (n <= 1) return rgb;
+        let byKey = filterMemo.get(rgb);
+        if (!byKey) { byKey = new Map(); filterMemo.set(rgb, byKey); }
+        const key = `${mode}|${shape}|${n}|${bw}x${bh}`;
+        const hit = byKey.get(key);
+        if (hit) return hit;
+
+        const [sx, sy] = windowFor(n, shape);
+        const made = mode === 'soften'
+            ? meanFilter(rgb, bw, bh, sx, sy)
+            : medianFilter(rgb, bw, bh, sx, sy);
+        byKey.set(key, made);
+        return made;
+    };
+
+    const lo = Math.floor(size);
+    const t = size - lo;
+    if (t < 1e-6) return run(lo);
+
+    const a = run(lo);
+    const b = run(lo + 1);
+    const out = new Float32Array(rgb.length);
+    const it = 1 - t;
+    for (let i = 0; i < rgb.length; i++) out[i] = it * a[i] + t * b[i];
     return out;
 }
 

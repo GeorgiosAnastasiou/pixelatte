@@ -26,7 +26,7 @@ import { createBrushLayer, applyDeltas, SHAPES } from './brush.js';
 import { createDrawLayer, applyDrawn, hexToPacked } from './draw.js';
 import { createColorPicker } from './colorpicker.js';
 import * as crop from './crop.js';
-import { spatialSmooth, blendMasked, maxRadius } from './smooth.js';
+import { spatialSmooth, blendMasked, maxSize, windowFor } from './smooth.js';
 import { saveBlob } from './save.js';
 import { setMediaLoaded } from './shell.js';
 import { $, makeLogger, bindSlider, fillPaletteSelect, fileToImageData, nextFrame,
@@ -112,9 +112,15 @@ function toolOffsetPx() {
 }
 
 /** The one filter definition. Applied globally, locally by brush, or both. */
+/**
+ * The slider counts neighbours out from a block; the filter wants the window's
+ * edge length. One block out is a 2x2 window, two is 3x3, and 0 is the single
+ * block itself, which is to say nothing at all.
+ */
 const smoothSettings = () => ({
     mode: $('ph-smode').querySelector('[aria-pressed="true"]')?.dataset.smode ?? 'despeckle',
-    radius: Number($('ph-sradius').value),
+    shape: $('ph-sshape').querySelector('[aria-pressed="true"]')?.dataset.sshape ?? 'square',
+    size: Number($('ph-sradius').value) + 1,
     strength: Number($('ph-sstrength').value) / 100,
 });
 
@@ -176,10 +182,10 @@ function ensureBase({ bw, bh, offsets }) {
  * reduction and the filter settings and on nothing else, so brushing a mask
  * over it is a cache hit every time.
  */
-function filteredGrid(radius, mode) {
-    const key = `${baseKey}|${radius}|${mode}`;
+function filteredGrid(size, shape, mode) {
+    const key = `${baseKey}|${size}|${shape}|${mode}`;
     if (filterCache && filterCache.key === key) return filterCache.rgb;
-    const rgb = spatialSmooth(base, surfaceW, surfaceH, { radius, mode, strength: 1 });
+    const rgb = spatialSmooth(base, surfaceW, surfaceH, { size, shape, mode, strength: 1 });
     filterCache = { key, rgb };
     return rgb;
 }
@@ -196,8 +202,8 @@ function composite(palette, lut) {
     const rgb = Float32Array.from(base);
 
     const sm = smoothSettings();
-    if (sm.radius >= 1) {
-        const filtered = filteredGrid(sm.radius, sm.mode);
+    if (sm.size > 1) {
+        const filtered = filteredGrid(sm.size, sm.shape, sm.mode);
         // Globally first, then wherever the brush asked for more.
         if (sm.strength > 0) {
             const a = sm.strength, ia = 1 - a;
@@ -232,7 +238,14 @@ async function render() {
     if (!imgData) { alert('Choose an image first.'); return; }
     const cfg = settings();
     const palette = getPaletteRgb(cfg.paletteName);
-    if (!palette.length) { log(`Palette "${cfg.paletteName}" is empty.`, 'err'); return; }
+    if (!palette.length) {
+        // Say so where the reader is looking. Leaving the previous render up
+        // with its old timing means the status line describes a palette that is
+        // not the one selected, which is worse than showing nothing.
+        $('ph-timing').textContent = `"${cfg.paletteName}" has no colours to match against`;
+        log(`Palette "${cfg.paletteName}" is empty — add a colour to it.`, 'err');
+        return;
+    }
 
     const btn = $('ph-run');
     btn.disabled = true;
@@ -864,8 +877,10 @@ function initBrush() {
         const sm = smoothSettings();
         $('ph-smode-note').textContent = SMODE_NOTES[sm.mode] ?? '';
         // The ceiling is a property of the grid, not a fixed number.
-        if (base) $('ph-sradius').max = String(maxRadius(surfaceW, surfaceH));
-        setStrengthActive('ph-sstrength', sm.radius >= 1);
+        if (base) $('ph-sradius').max = String(maxSize(surfaceW, surfaceH) - 1);
+        const [wx, wy] = windowFor(sm.size, sm.shape);
+        $('ph-sradius-val').textContent = `${wx} x ${wy}`;
+        setStrengthActive('ph-sstrength', sm.size > 1);
     };
     for (const btn of $('ph-smode').querySelectorAll('.shape')) {
         btn.addEventListener('click', () => {
@@ -879,6 +894,15 @@ function initBrush() {
     // paintSmoothPanel too: the radius is what decides whether strength has
     // anything to act on, so moving it has to re-evaluate that.
     bindSlider('ph-sradius', 'ph-sradius-val', () => { paintSmoothPanel(); scheduleRender(); });
+    for (const btn of $('ph-sshape').querySelectorAll('.shape')) {
+        btn.addEventListener('click', () => {
+            for (const o of $('ph-sshape').querySelectorAll('.shape')) {
+                o.setAttribute('aria-pressed', String(o === btn));
+            }
+            paintSmoothPanel();
+            scheduleRender();
+        });
+    }
     bindSlider('ph-sstrength', 'ph-sstrength-val', scheduleRender);
     paintSmoothPanel();
 
@@ -1058,7 +1082,19 @@ function initBrush() {
 /* ---------------------------------------------------------------- init */
 
 export function init() {
-    onPalettesChanged((palettes) => fillPaletteSelect($('ph-palette'), palettes));
+    /**
+     * Repaint when the palette itself changes, not only when a different one is
+     * chosen.
+     *
+     * Adding a colour, removing one, or mixing one in the draw panel all change
+     * what the picture should look like. Without this the canvas kept showing
+     * the previous palette until some unrelated control was touched, which
+     * reads as the edit having done nothing.
+     */
+    onPalettesChanged((palettes) => {
+        fillPaletteSelect($('ph-palette'), palettes);
+        scheduleRender();
+    });
     attachPalettePicker('ph-palette');
 
     layer = createBrushLayer(1, 1);

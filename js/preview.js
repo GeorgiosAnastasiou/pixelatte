@@ -40,7 +40,7 @@ export function renderStill(canvas, imgData, { bw, bh, offsets, palette, lut, sm
     // Passed as a function rather than as settings, so core.js keeps its single
     // job and the landing page's demo — which imports core.js directly — does
     // not drag in a filter it never uses.
-    const apply = smooth && smooth.radius >= 1
+    const apply = smooth && smooth.size > 1
         ? { apply: (rgb, w, h) => spatialSmooth(rgb, w, h, smooth) }
         : null;
     const r = processStill(rgba, imgData.width, imgData.height,

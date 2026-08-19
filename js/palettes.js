@@ -200,6 +200,32 @@ function orderedSwatches(colors, added = 0) {
     return out;
 }
 
+/**
+ * How many swatches a compact strip will show.
+ *
+ * The strip is a palette's face, not an inventory: the exact count is printed
+ * beside it. A 53-colour palette across a fixed 95px gives 1.75px a colour,
+ * which is a smear rather than a palette, so beyond this the strip shows an
+ * even sample and the full set stays on the editing surface below.
+ */
+const STRIP_MAX = 24;
+
+/** Every nth item, always keeping the first, the last and the divider. */
+function sampleForStrip(items) {
+    if (items.length <= STRIP_MAX) return items;
+    const dividers = items.filter((it) => it.divider);
+    const colours = items.filter((it) => !it.divider);
+    const keep = Math.max(1, STRIP_MAX - dividers.length);
+    const step = colours.length / keep;
+    const picked = [];
+    for (let i = 0; i < keep; i++) picked.push(colours[Math.min(colours.length - 1, Math.round(i * step))]);
+    // Put the divider back where it was proportionally.
+    if (!dividers.length) return picked;
+    const at = items.findIndex((it) => it.divider);
+    const cut = Math.round((at / items.length) * picked.length);
+    return [...picked.slice(0, cut), ...dividers, ...picked.slice(cut)];
+}
+
 function dividerEl(className) {
     const el = document.createElement('i');
     el.className = className;
@@ -220,7 +246,7 @@ function dividerEl(className) {
 function swatchStrip(colors, added = 0) {
     const wrap = document.createElement('div');
     wrap.className = 'strip';
-    for (const item of orderedSwatches(colors, added)) {
+    for (const item of sampleForStrip(orderedSwatches(colors, added))) {
         if (item.divider) { wrap.appendChild(dividerEl('strip-div')); continue; }
         const s = document.createElement('span');
         s.style.background = colors[item.index];
@@ -234,20 +260,32 @@ function renderList() {
     list.innerHTML = '';
 
     const names = Object.keys(palettes);
-    // Yours first: the shipped ones are reference material you scroll past, the
-    // ones you made are what you came here for.
+    // Yours first: the shipped ones are reference material to scroll past, the
+    // ones made here are what the screen is for.
     const mine = names.filter((n) => !store.isBuiltIn(n));
     const shipped = names.filter((n) => store.isBuiltIn(n));
 
-    $('pal-total').textContent = `${mine.length} yours, ${shipped.length} built in`;
+    $('pal-total').textContent = `${mine.length} yours, ${shipped.length} in the library`;
 
     if (mine.length) {
         list.appendChild(sectionHeading('Your palettes'));
         for (const name of mine) list.appendChild(paletteRow(name));
     }
-    if (shipped.length) {
-        list.appendChild(sectionHeading('Built in'));
-        for (const name of shipped) list.appendChild(paletteRow(name));
+
+    // The library, by group. Thirty-odd shipped palettes under one heading is a
+    // list to endure; under four it is a list to browse.
+    const byGroup = new Map();
+    for (const name of shipped) {
+        const g = store.groupOf(name) ?? 'Other';
+        if (!byGroup.has(g)) byGroup.set(g, []);
+        byGroup.get(g).push(name);
+    }
+    const ordered = [...store.GROUPS, ...[...byGroup.keys()].filter((g) => !store.GROUPS.includes(g))];
+    for (const group of ordered) {
+        const inGroup = byGroup.get(group);
+        if (!inGroup?.length) continue;
+        list.appendChild(sectionHeading(`${group} · ${inGroup.length}`));
+        for (const name of inGroup) list.appendChild(paletteRow(name));
     }
 }
 

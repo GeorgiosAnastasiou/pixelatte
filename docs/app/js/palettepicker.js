@@ -14,6 +14,16 @@ import * as store from './store.js';
 import { getPalettes, getAddedCount, onPalettesChanged } from './palettes.js';
 import { proximityOrder } from './palette_order.js';
 
+/** Beyond this a strip shows an even sample; see palettes.js for why. */
+const STRIP_MAX = 24;
+
+function sample(list) {
+    if (list.length <= STRIP_MAX) return list;
+    const step = list.length / STRIP_MAX;
+    return Array.from({ length: STRIP_MAX },
+        (_, i) => list[Math.min(list.length - 1, Math.round(i * step))]);
+}
+
 /** Colours ordered by proximity, so a strip reads as a gradient not a jumble. */
 function swatchStrip(colors, added = 0) {
     const wrap = document.createElement('div');
@@ -22,7 +32,7 @@ function swatchStrip(colors, added = 0) {
 
     const group = (from, to) => {
         const slice = colors.slice(from, to);
-        for (const i of proximityOrder(slice)) {
+        for (const i of sample(proximityOrder(slice))) {
             const s = document.createElement('span');
             s.style.background = slice[i];
             wrap.appendChild(s);
@@ -104,9 +114,21 @@ export function attachPalettePicker(selectId) {
             if (shipped.length) list.appendChild(sectionHeading('Your palettes'));
             for (const n of mine) list.appendChild(row(n, palettes[n]));
         }
-        if (shipped.length) {
-            if (mine.length) list.appendChild(sectionHeading('Built in'));
-            for (const n of shipped) list.appendChild(row(n, palettes[n]));
+
+        // Same grouping as the Palettes screen, so a palette is found in the
+        // same place wherever it is offered.
+        const byGroup = new Map();
+        for (const n of shipped) {
+            const g = store.groupOf(n) ?? 'Other';
+            if (!byGroup.has(g)) byGroup.set(g, []);
+            byGroup.get(g).push(n);
+        }
+        const ordered = [...store.GROUPS, ...[...byGroup.keys()].filter((g) => !store.GROUPS.includes(g))];
+        for (const group of ordered) {
+            const inGroup = byGroup.get(group);
+            if (!inGroup?.length) continue;
+            list.appendChild(sectionHeading(group));
+            for (const n of inGroup) list.appendChild(row(n, palettes[n]));
         }
     }
 
