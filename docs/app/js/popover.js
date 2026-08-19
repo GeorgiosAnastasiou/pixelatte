@@ -50,11 +50,15 @@ function position(panel, trigger) {
             `${Math.round(window.innerHeight - (barRect ? barRect.top : window.innerHeight) + GAP)}px`;
     }
 
+    const p = panel.getBoundingClientRect();
+    // Beside the rail the panel takes the left of the stage, not the bottom of
+    // it, and nothing has to move out of its way.
+    reportCover(side ? null : p);
+
     if (!arrow) return;
 
     // Measure where the panel actually landed rather than recomputing it, then
     // pin the notch to the trigger's centre line, kept clear of the corners.
-    const p = panel.getBoundingClientRect();
     arrow.hidden = false;
     arrow.classList.toggle('side', side);
 
@@ -72,7 +76,7 @@ function position(panel, trigger) {
 /**
  * Tell the shell a panel is up.
  *
- * On a phone the panel covers the lower half of the screen, which is where the
+ * On a phone the panel covers the lower part of the screen, which is where the
  * picture was. The stage reads this and shrinks its own box, so the image
  * re-fits into the strip that is still visible and the effect of whatever the
  * panel is changing can actually be seen while changing it.
@@ -82,6 +86,28 @@ function markOpen(open) {
     if (!app) return;
     if (open) app.dataset.popOpen = '';
     else delete app.dataset.popOpen;
+}
+
+/**
+ * Publish how much of the stage the panel is actually sitting on top of.
+ *
+ * The stage used to give up a flat 48vh whenever anything was open, which is
+ * half the screen surrendered to a panel that might be three lines tall. This
+ * measures the real overlap instead, so the picture only loses the room the
+ * panel took — and, on the desktop rail where a panel covers nothing at all,
+ * loses none.
+ *
+ * A px value rather than a fraction because it is measured in px; the
+ * stylesheet uses it for the stage's bottom padding and for anything else that
+ * has to stay clear of an open panel.
+ */
+function reportCover(panelRect) {
+    const app = document.getElementById('app');
+    if (!app) return;
+    const stage = document.getElementById('stage');
+    const bottom = stage ? stage.getBoundingClientRect().bottom : window.innerHeight;
+    const cover = panelRect ? Math.max(0, bottom - panelRect.top) : 0;
+    app.style.setProperty('--pop-h', `${Math.round(cover)}px`);
 }
 
 export function close() {
@@ -94,6 +120,7 @@ export function close() {
     openPanel = null;
     openTrigger = null;
     markOpen(false);
+    reportCover(null);
 }
 
 export function open(panel, trigger) {

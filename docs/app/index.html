@@ -413,6 +413,26 @@
             </section>
         </div>
 
+        <!-- Which tool currently owns a drag on the picture.
+             Four of the photo tools are modes: while one is on, dragging paints
+             or crops instead of panning, and the switch that did it is two taps
+             away inside a panel that is usually shut. The tool button lights up
+             in the bar, but the bar scrolls, so the lit one is often off screen.
+             These say so on the picture itself, where the drag will land.
+             Each one opens the panel it came from, which is where its off
+             switch is. Empty until a tool is on: an indicator that is always
+             there indicates nothing. -->
+        <div class="stage-flags" id="ph-flags" data-for="photo" role="status" aria-live="polite">
+            <button type="button" class="flag" data-flag="ph-brush-on"
+                    data-opens="ph-brush-tool" data-icon="brush" hidden><span>Brush</span></button>
+            <button type="button" class="flag" data-flag="ph-draw-on"
+                    data-opens="ph-draw-tool" data-icon="draw" hidden><span>Draw</span></button>
+            <button type="button" class="flag" data-flag="ph-smooth-brush-on"
+                    data-opens="ph-smooth-tool" data-icon="smoothing" hidden><span>Smooth</span></button>
+            <button type="button" class="flag" data-flag="ph-crop-on"
+                    data-opens="ph-crop-tool" data-icon="crop" hidden><span>Crop</span></button>
+        </div>
+
         <!-- Progress sits over the stage while a video job runs. -->
         <div class="stage-progress hidden" id="vid-progress" data-for="video">
             <label>Decode &amp; pixelate</label>
@@ -466,7 +486,7 @@
             <button class="tool" data-pop="pop-ph-brush"   data-icon="brush" id="ph-brush-tool"><span>Brush</span></button>
             <button class="tool" data-pop="pop-ph-draw"    data-icon="draw" id="ph-draw-tool"><span>Draw</span></button>
             <button class="tool" data-pop="pop-ph-crop"    data-icon="crop" id="ph-crop-tool"><span>Crop</span></button>
-            <button class="tool" data-pop="pop-ph-smooth"  data-icon="smoothing"><span>Smooth</span></button>
+            <button class="tool" data-pop="pop-ph-smooth"  data-icon="smoothing" id="ph-smooth-tool"><span>Smooth</span></button>
             <button class="tool" id="ph-undo"              data-icon="undo" disabled><span>Undo</span></button>
             <button class="tool" id="ph-redo"              data-icon="redo" disabled><span>Redo</span></button>
             <button class="tool" id="ph-fit"               data-icon="fit"><span>Fit</span></button>

@@ -19,8 +19,16 @@
 /** Bump when entries are added below, and stamp the new ones with it. */
 export const DEFAULTS_VERSION = 4;
 
-/** The order groups appear in. Anything unlisted falls to the end. */
-export const GROUPS = ['Hardware', 'Editor themes', 'Landscape', 'Duotone'];
+/**
+ * The order groups appear in. Anything unlisted falls to the end.
+ *
+ * Hardware comes last despite being the most exact set here. Those palettes are
+ * the ones you go looking for by name — you already know whether you want the
+ * Game Boy — while the others are the ones you find by scrolling, and a list
+ * that opens on four greens is a list that looks like it is only about
+ * machines. The ones picked for pictures lead instead.
+ */
+export const GROUPS = ['Landscape', 'Duotone', 'Editor themes', 'Hardware'];
 
 export const CATALOGUE = [
     {

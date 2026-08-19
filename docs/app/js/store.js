@@ -89,17 +89,30 @@ function addNewDefaults(palettes) {
 
 
 /**
- * Yours first, then the shipped ones in catalogue order.
+ * Yours first, then the shipped ones by group, then in catalogue order.
  *
  * The stored object keeps insertion order, so a store written by an older
  * version has the old arrangement baked into it. Reordering on load is what
  * lets the shipped list be rearranged without asking anyone to reset anything.
+ *
+ * Group first, rather than the catalogue's own order, so that GROUPS is the one
+ * place the arrangement is decided. Every screen already groups what it shows,
+ * and the flat order matters in exactly one place — whichever palette a fresh
+ * install lands on — which should be the first of the first group, not whatever
+ * happens to head the array.
  */
 function inCatalogueOrder(palettes) {
     const rank = new Map(CATALOGUE.map((e, i) => [e.name, i]));
+    // Unlisted groups sort after the listed ones, keeping catalogue order among
+    // themselves; the same rule the screens use for a group they do not know.
+    const groupRank = (n) => {
+        const i = GROUPS.indexOf(groupOf(n));
+        return i === -1 ? GROUPS.length : i;
+    };
     const names = Object.keys(palettes);
     const mine = names.filter((n) => !rank.has(n));
-    const shipped = names.filter((n) => rank.has(n)).sort((a, b) => rank.get(a) - rank.get(b));
+    const shipped = names.filter((n) => rank.has(n))
+        .sort((a, b) => groupRank(a) - groupRank(b) || rank.get(a) - rank.get(b));
 
     const out = {};
     for (const n of mine) out[n] = palettes[n];

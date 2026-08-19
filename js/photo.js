@@ -718,6 +718,7 @@ function applyCrop() {
     // overlay up over a picture it no longer describes would be a lie.
     $('ph-crop-on').checked = false;
     $('ph-crop-tool').classList.remove('on-toggle');
+    paintFlags();
 
     commitImage(dctx.getImageData(0, 0, out.w, out.h), { ...cropRect },
         `Cropped to ${cropRect.w}x${cropRect.h}` +
@@ -729,6 +730,39 @@ function resetCrop() {
     const src = { w: originalImgData.width, h: originalImgData.height };
     cropRect = { x: 0, y: 0, w: src.w, h: src.h };
     commitImage(originalImgData, null, 'Back to the full image.');
+}
+
+/* --------------------------------------------------------- active flags */
+
+/**
+ * Show a chip on the picture for every tool that is currently on.
+ *
+ * Read from the checkboxes rather than tracked alongside them, because they are
+ * turned off from several places — the exclusivity rule, applying a crop, a
+ * fresh image — and a mirror of that state would be one more thing to remember
+ * to update. Repainting the lot costs four attribute writes.
+ */
+function paintFlags() {
+    for (const flag of document.querySelectorAll('#ph-flags .flag')) {
+        flag.hidden = !$(flag.dataset.flag)?.checked;
+    }
+}
+
+/** Each chip opens the panel it came from, which is where its off switch is. */
+function initFlags() {
+    for (const flag of document.querySelectorAll('#ph-flags .flag')) {
+        const tool = $(flag.dataset.opens);
+        if (!tool) continue;
+        // The <span>, not the button: the icon painted into it carries an SVG
+        // <title> of its own, and textContent would read both of them.
+        const name = flag.querySelector('span')?.textContent.trim() ?? 'This tool';
+        flag.title = `${name} is on — open its settings`;
+        flag.setAttribute('aria-label', `${name} is on. Open its settings.`);
+        // Press the tool itself rather than reaching into popover.js: the tool
+        // owns the panel, and going through it keeps one path for opening one.
+        flag.addEventListener('click', () => tool.click());
+    }
+    paintFlags();
 }
 
 /** All the crop cursor classes, so setting one can clear the rest. */
@@ -916,11 +950,11 @@ function initBrush() {
     }
     bindSlider('ph-smooth-size', 'ph-smooth-size-val', () => view.redraw());
 
-    // Three tools, one pointer: turning any on turns the others off.
+    // Four tools, one pointer: turning any on turns the others off.
     const TOOLS = ['ph-brush-on', 'ph-draw-on', 'ph-smooth-brush-on', 'ph-crop-on'];
     const TOOL_BUTTONS = {
         'ph-brush-on': 'ph-brush-tool', 'ph-draw-on': 'ph-draw-tool',
-        'ph-crop-on': 'ph-crop-tool',
+        'ph-smooth-brush-on': 'ph-smooth-tool', 'ph-crop-on': 'ph-crop-tool',
     };
     for (const id of TOOLS) {
         $(id).addEventListener('change', () => {
@@ -934,9 +968,11 @@ function initBrush() {
             }
             const own = TOOL_BUTTONS[id];
             if (own) $(own).classList.toggle('on-toggle', $(id).checked);
+            paintFlags();
             view.redraw();
         });
     }
+    initFlags();
 
     confirmButton('ph-smooth-clear', 'Press again to clear', () => {
         if (smoothMask.clear()) {
