@@ -38,7 +38,7 @@ console.log('\n--- stamp shapes ---');
     }
 }
 
-console.log('\n--- one pass per stroke, however slowly you drag ---');
+console.log('\n--- holding still adds nothing, however slowly you drag ---');
 {
     const layer = createBrushLayer(8, 8);
     layer.begin();
@@ -55,6 +55,42 @@ console.log('\n--- one pass per stroke, however slowly you drag ---');
     layer.stamp(4, 4, 'square', 1, [3, 0, 0]);
     layer.end();
     ok('a second stroke does apply again', at(layer, 4, 4) === 6);
+}
+
+console.log('\n--- leaving a block and coming back nudges it again ---');
+{
+    // The other half of the rule. Sweeping back over an area within one stroke
+    // is a second pass, which is how a nudge is built up without lifting.
+    const layer = createBrushLayer(8, 8);
+    layer.begin();
+    layer.stamp(2, 4, 'square', 1, [3, 0, 0]);
+    layer.stamp(3, 4, 'square', 1, [3, 0, 0]);   // moved off it
+    layer.stamp(2, 4, 'square', 1, [3, 0, 0]);   // and back
+    ok('a block left and re-entered is nudged twice', at(layer, 2, 4) === 6, `${at(layer, 2, 4)}`);
+    ok('the block passed through is nudged once', at(layer, 3, 4) === 3, `${at(layer, 3, 4)}`);
+
+    // Sitting still after the return still adds nothing.
+    for (let i = 0; i < 10; i++) layer.stamp(2, 4, 'square', 1, [3, 0, 0]);
+    ok('holding after the return adds nothing', at(layer, 2, 4) === 6, `${at(layer, 2, 4)}`);
+    layer.end();
+
+    // One stroke is still one undo step, however many passes it contained.
+    ok('the whole sweep undoes in one step', layer.undo() && at(layer, 2, 4) === 0
+        && at(layer, 3, 4) === 0);
+}
+
+console.log('\n--- a wide brush re-enters block by block ---');
+{
+    // Dragging sideways by one block: only the newly covered column is nudged,
+    // not the five-sixths of the stamp that never left the picture.
+    const layer = createBrushLayer(12, 12);
+    layer.begin();
+    layer.stamp(4, 4, 'square', 3, [1, 0, 0]);
+    layer.stamp(5, 4, 'square', 3, [1, 0, 0]);
+    layer.end();
+    ok('the overlap is nudged once', at(layer, 5, 4) === 1 && at(layer, 4, 4) === 1);
+    ok('the trailing column keeps its single nudge', at(layer, 3, 4) === 1);
+    ok('the leading column is nudged as it is entered', at(layer, 6, 4) === 1);
 }
 
 console.log('\n--- overlapping stamps within one stroke ---');

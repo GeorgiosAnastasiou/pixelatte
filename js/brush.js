@@ -13,6 +13,10 @@
 //     recorded, and it still counts toward the next nudge.
 //   - Changing the palette re-decides every block, including nudged ones. The
 //     offsets survive; what they map to does not.
+//
+// A block is nudged when the brush *arrives* on it. Holding still adds nothing
+// however long the press lasts, and leaving a block and coming back nudges it
+// again — see stamp() for why that is the rule rather than once per stroke.
 
 /** Per channel, in either direction. */
 export const MAX_DELTA = 16;
@@ -108,29 +112,41 @@ export function createBrushLayer(bw, bh) {
 
         /** Begin a stroke. Everything until end() is one undo step. */
         begin() {
-            stroke = { touched: new Set(), before: new Map() };
+            stroke = { covered: new Set(), before: new Map() };
         },
 
         /**
          * Stamp at a block, with the shape's offsets.
          *
-         * The touched set is what makes a stroke idempotent: dragging back over
-         * ground you already covered, or wobbling in place, applies the offset
-         * once. Without it the amount of nudge would depend on how slowly the
-         * hand moved, which is not something anyone can aim.
+         * A block is nudged when the brush arrives on it, not once per stroke.
+         * `covered` is what the *previous* stamp of this stroke sat on, so a
+         * block still under the brush is left alone and a block the brush has
+         * just moved onto is nudged — including one it covered earlier in the
+         * same stroke and has come back to.
+         *
+         * That is the rule a hand expects from a brush: holding still adds
+         * nothing however long the press lasts, so the nudge never depends on
+         * how slowly the hand moved; but going over an area a second time is a
+         * second pass, because deliberately sweeping back is how you ask for
+         * more. A per-stroke mask could not tell those two apart — it refused
+         * both, and the only way to build up a nudge was to lift and press
+         * again for every pass.
          *
          * @returns {boolean} whether anything changed
          */
         stamp(bx, by, shape, size, rgbDelta) {
             if (!stroke) this.begin();
             let changed = false;
+            const covered = new Set();
 
             for (const [dx, dy] of stampOffsets(shape, size)) {
                 const x = bx + dx, y = by + dy;
                 if (!inside(x, y)) continue;
                 const idx = y * w + x;
-                if (stroke.touched.has(idx)) continue;
-                stroke.touched.add(idx);
+                // Covered either way: what matters next time is where the brush
+                // is now, not which of these blocks this pass happened to nudge.
+                covered.add(idx);
+                if (stroke.covered.has(idx)) continue;
 
                 const base = idx * 3;
                 if (!stroke.before.has(idx)) {
@@ -141,6 +157,8 @@ export function createBrushLayer(bw, bh) {
                     if (next !== deltas[base + c]) { deltas[base + c] = next; changed = true; }
                 }
             }
+
+            stroke.covered = covered;
             return changed;
         },
 

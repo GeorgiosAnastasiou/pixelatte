@@ -22,7 +22,7 @@ import { attachPalettePicker } from './palettepicker.js';
 import { linkBlockSliders } from './blocksize.js';
 import { setSubject } from './subject.js';
 import { createView } from './view.js';
-import { createBrushLayer, applyDeltas, SHAPES } from './brush.js';
+import { createBrushLayer, applyDeltas, SHAPES, stampOffsets } from './brush.js';
 import { createDrawLayer, applyDrawn, hexToPacked } from './draw.js';
 import { createColorPicker } from './colorpicker.js';
 import * as crop from './crop.js';
@@ -352,6 +352,37 @@ function activeTool() {
     return null;
 }
 
+/* ------------------------------------------------------- the tool cursor */
+
+/* A dark line with light dashes running along it, drawn in that order so the
+   dark one is still there in the gaps. Neither colour alone survives every
+   picture — a white outline vanishes into a sky, a black one into a shadow —
+   and a photograph reduced to sixteen colours has large flat areas of both.
+   Alternating means some of the outline is always against a contrast. */
+const CURSOR_DARK = '#000';
+const CURSOR_LIGHT = '#fff';
+const CURSOR_W = 4;        // the dark line
+const CURSOR_INNER = 2;    // the light dashes down its middle
+const CURSOR_DASH = 6;
+
+/**
+ * Both colours of one path, dark underneath.
+ *
+ * @param {Path2D} path in view coordinates
+ */
+function strokeTwoTone(ctx, path) {
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
+    ctx.setLineDash([]);
+    ctx.strokeStyle = CURSOR_DARK;
+    ctx.lineWidth = CURSOR_W;
+    ctx.stroke(path);
+    ctx.strokeStyle = CURSOR_LIGHT;
+    ctx.lineWidth = CURSOR_INNER;
+    ctx.setLineDash([CURSOR_DASH, CURSOR_DASH]);
+    ctx.stroke(path);
+}
+
 /**
  * A line from the finger to where the stroke is actually landing.
  *
@@ -363,42 +394,97 @@ function drawReachLine(ctx, raw) {
     if (!off || !raw || !activeTool()) return;
     const r = $('ph-canvas').getBoundingClientRect();
     const x = raw.x - r.left, y = raw.y - r.top;
+
+    const line = new Path2D();
+    line.moveTo(x, y);
+    line.lineTo(x, y + off);
+    const ring = new Path2D();
+    ring.arc(x, y, 5, 0, Math.PI * 2);
+
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 4]);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y + off);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
-    ctx.stroke();
+    strokeTwoTone(ctx, line);
+    strokeTwoTone(ctx, ring);
     ctx.restore();
+}
+
+/**
+ * The silhouette of a stamp, as segments in block coordinates.
+ *
+ * The outline used to be the stamp's bounding box, which meant every shape drew
+ * a rectangle — a circle brush announced itself as a square and there was no
+ * way to see what a stroke would actually cover. This walks the stamp's own
+ * cells and keeps the edges that face a block it does not cover, so the outline
+ * is the shape.
+ *
+ * Runs of collinear edges are merged into single segments. Partly it is fewer
+ * strokes, but mostly it is the dashes: a dash pattern restarts on every
+ * subpath, so an outline built one block-edge at a time would come out solid
+ * wherever a block is shorter than a dash — which at fit-to-window is always.
+ *
+ * Cached, because this depends only on the shape and the size. Rebuilding it
+ * per frame would walk three thousand cells at size 64 for a shape that has not
+ * changed since the last one.
+ */
+let outlineCache = { key: '', segments: [] };
+
+function stampOutline(shape, size) {
+    const key = `${shape}|${size}`;
+    if (outlineCache.key === key) return outlineCache.segments;
+
+    const cells = stampOffsets(shape, size);
+    const covered = new Set(cells.map(([dx, dy]) => `${dx},${dy}`));
+    // Edges keyed by the line they lie on, so each line's runs can be merged
+    // along it: horizontal edges by their y, vertical edges by their x.
+    const horizontal = new Map();   // y -> [x, ...]  (each spans x to x+1)
+    const vertical = new Map();     // x -> [y, ...]  (each spans y to y+1)
+    const add = (map, line, pos) => {
+        const list = map.get(line);
+        if (list) list.push(pos); else map.set(line, [pos]);
+    };
+
+    for (const [dx, dy] of cells) {
+        if (!covered.has(`${dx},${dy - 1}`)) add(horizontal, dy, dx);
+        if (!covered.has(`${dx},${dy + 1}`)) add(horizontal, dy + 1, dx);
+        if (!covered.has(`${dx - 1},${dy}`)) add(vertical, dx, dy);
+        if (!covered.has(`${dx + 1},${dy}`)) add(vertical, dx + 1, dy);
+    }
+
+    const segments = [];
+    const merge = (map, horiz) => {
+        for (const [line, positions] of map) {
+            positions.sort((a, b) => a - b);
+            let start = positions[0], prev = start;
+            for (let i = 1; i <= positions.length; i++) {
+                const p = positions[i];
+                if (p === prev + 1) { prev = p; continue; }
+                // The run ends at prev, and each edge spans one block past its
+                // own position.
+                segments.push(horiz ? [start, line, prev + 1, line]
+                                    : [line, start, line, prev + 1]);
+                start = prev = p;
+            }
+        }
+    };
+    merge(horizontal, true);
+    merge(vertical, false);
+
+    outlineCache = { key, segments };
+    return segments;
 }
 
 /** Outline the blocks the active tool is about to cover, in view coordinates. */
 function drawBrushCursor(ctx, g, at) {
     const b = activeTool();
     if (!b || !at) return;
+
+    const path = new Path2D();
+    for (const [x0, y0, x1, y1] of stampOutline(b.shape, b.size)) {
+        path.moveTo(g.panX + (at.bx + x0) * g.px, g.panY + (at.by + y0) * g.px);
+        path.lineTo(g.panX + (at.bx + x1) * g.px, g.panY + (at.by + y1) * g.px);
+    }
+
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    // Solid for drawing: that stroke lands exactly where the outline is, so it
-    // should not look as provisional as a nudge does.
-    if (b.kind === 'draw') ctx.setLineDash([]);
-    // One rectangle around the stamp's bounding box rather than an outline per
-    // block: at size 64 that is 4,000 strokes a frame for no extra information.
-    const r = (Math.max(1, b.size) - 1) / 2;
-    const w = b.shape === 'vline' ? 1 : Math.max(1, Math.round(b.size));
-    const h = b.shape === 'hline' ? 1 : Math.max(1, Math.round(b.size));
-    ctx.strokeRect(
-        g.panX + (at.bx - Math.floor(r) * (b.shape === 'vline' ? 0 : 1)) * g.px,
-        g.panY + (at.by - Math.floor(r) * (b.shape === 'hline' ? 0 : 1)) * g.px,
-        w * g.px, h * g.px,
-    );
+    strokeTwoTone(ctx, path);
     ctx.restore();
 }
 

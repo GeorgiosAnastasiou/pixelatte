@@ -225,9 +225,17 @@
                         boundary shows nothing — it is still recorded, and it still counts towards
                         the next one.</dd>
 
-                    <dt>One pass per stroke</dt>
-                    <dd>Going back over ground already covered in the same stroke does nothing.
-                        Lift and press again to apply a second nudge, so the amount never depends on the speed of the drag.</dd>
+                    <dt>It nudges on arrival</dt>
+                    <dd>A block is nudged the moment the brush moves onto it. Holding still adds
+                        nothing however long the press lasts, so the amount never depends on the
+                        speed of the drag — but sweeping back over an area is a second pass, and
+                        that is how a nudge is built up without lifting a finger. With a wide brush
+                        only the blocks it has just moved onto are nudged; the ones it is already
+                        sitting on are left alone.</dd>
+
+                    <dt>Building up, and starting over</dt>
+                    <dd>Rub back and forth over the same spot to push it further, one pass per
+                        crossing. Whatever it took, the whole press is a single undo step.</dd>
 
                     <dt>Reach</dt>
                     <dd>On a phone a hand covers the thing being edited. Reach moves where
@@ -248,10 +256,16 @@
             <section class="block">
                 <h2>Drawing, and the divider</h2>
                 <dl class="tips">
-                    <dt>Brush vs draw</dt>
+                    <dt>Brush vs drawing pen</dt>
                     <dd>The brush nudges a block and lets the palette matcher decide what that
-                        becomes. Draw sets a block outright and takes the matcher out of the loop
-                        for those blocks. Only one can be on at a time.</dd>
+                        becomes. The drawing pen sets a block outright and takes the matcher out of
+                        the loop for those blocks. Only one can be on at a time.</dd>
+
+                    <dt>The pen has nothing to build up</dt>
+                    <dd>It covers every block it moves onto, and a block set to the colour it is
+                        already holding does not change — so going over the same ground twice looks
+                        the same as going over it once. The brush is the one where a second pass
+                        counts.</dd>
 
                     <dt>The line in a palette strip</dt>
                     <dd>Colours to the right of it were created for drawing. They are
@@ -325,7 +339,7 @@
 
                     <dt>Undo covers it</dt>
                     <dd>Moving the selection, resizing it, applying, and going back to the full
-                        image are all steps. Applying does clear the brush and draw history, because
+                        image are all steps. Applying does clear the brush and pen history, because
                         those offsets were placed on a grid that no longer exists.</dd>
                 </dl>
             </section>
@@ -426,7 +440,7 @@
             <button type="button" class="flag" data-flag="ph-brush-on"
                     data-opens="ph-brush-tool" data-icon="brush" hidden><span>Brush</span></button>
             <button type="button" class="flag" data-flag="ph-draw-on"
-                    data-opens="ph-draw-tool" data-icon="draw" hidden><span>Draw</span></button>
+                    data-opens="ph-draw-tool" data-icon="draw" hidden><span>Drawing pen</span></button>
             <button type="button" class="flag" data-flag="ph-smooth-brush-on"
                     data-opens="ph-smooth-tool" data-icon="smoothing" hidden><span>Smooth</span></button>
             <button type="button" class="flag" data-flag="ph-crop-on"
@@ -484,7 +498,7 @@
             <button class="tool" data-pop="pop-ph-blocks"  data-icon="blocks"><span>Pixel size</span></button>
             <button class="tool" data-pop="pop-ph-rgb"     data-icon="rgb"><span>RGB</span></button>
             <button class="tool" data-pop="pop-ph-brush"   data-icon="brush" id="ph-brush-tool"><span>Brush</span></button>
-            <button class="tool" data-pop="pop-ph-draw"    data-icon="draw" id="ph-draw-tool"><span>Draw</span></button>
+            <button class="tool" data-pop="pop-ph-draw"    data-icon="draw" id="ph-draw-tool"><span>Drawing pen</span></button>
             <button class="tool" data-pop="pop-ph-crop"    data-icon="crop" id="ph-crop-tool"><span>Crop</span></button>
             <button class="tool" data-pop="pop-ph-smooth"  data-icon="smoothing" id="ph-smooth-tool"><span>Smooth</span></button>
             <button class="tool" id="ph-undo"              data-icon="undo" disabled><span>Undo</span></button>
@@ -697,15 +711,15 @@
             <p class="hint">The brush nudges a block's value before it is matched to the palette,
                 so the result always stays in the palette. A nudge that is not enough to push a
                 block onto its neighbouring colour shows no change — it is still recorded, and it
-                still counts towards the next one. One pass over the same block per stroke,
-                whatever the speed of the drag.</p>
+                still counts towards the next one. A block is nudged as the brush arrives on it:
+                holding still adds nothing, and sweeping back over an area is another pass.</p>
             <button id="ph-brush-clear" class="yellow">Clear all brushwork</button>
         </div>
 
         <div class="pop" id="pop-ph-draw" hidden>
             <div class="pop-sticky">
-                <h3>Draw</h3>
-                <label class="check"><input type="checkbox" id="ph-draw-on"> Draw on</label>
+                <h3>Drawing pen</h3>
+                <label class="check"><input type="checkbox" id="ph-draw-on"> Drawing pen on</label>
             </div>
             <p class="hint">Drawing sets a block to a colour outright — the palette matcher does
                 not get a say on those blocks. Turning the brush on turns this off; they cannot
@@ -727,7 +741,7 @@
                     draw with but never matched to automatically.</p>
             </div>
 
-            <div class="shape-row" id="ph-draw-shapes" role="radiogroup" aria-label="Draw shape">
+            <div class="shape-row" id="ph-draw-shapes" role="radiogroup" aria-label="Drawing pen shape">
                 <button type="button" class="shape" data-shape="square" aria-pressed="true">Square</button>
                 <button type="button" class="shape" data-shape="circle" aria-pressed="false">Circle</button>
                 <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
