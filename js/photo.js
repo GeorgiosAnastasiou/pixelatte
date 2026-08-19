@@ -361,25 +361,35 @@ function activeTool() {
    Alternating means some of the outline is always against a contrast. */
 const CURSOR_DARK = '#000';
 const CURSOR_LIGHT = '#fff';
-const CURSOR_W = 4;        // the dark line
-const CURSOR_INNER = 2;    // the light dashes down its middle
-const CURSOR_DASH = 6;
+const CURSOR_W = 4;        // the dark line, where there is room for it
+const CURSOR_MIN_W = 1.5;
+
+/**
+ * How thick the outline can be without swallowing the shape it outlines.
+ *
+ * Fixed at 4 it was chunky on a desktop and a blob on a phone: at fit-to-window
+ * a block is a couple of screen pixels, and a four-pixel line around a
+ * three-block disc leaves nothing of the disc to see. Tied to the block size it
+ * stays as heavy as the picture can carry.
+ */
+const cursorWidth = (px) => Math.max(CURSOR_MIN_W, Math.min(CURSOR_W, px * 0.6));
 
 /**
  * Both colours of one path, dark underneath.
  *
  * @param {Path2D} path in view coordinates
+ * @param {number} w width of the dark line; the light dashes are half of it
  */
-function strokeTwoTone(ctx, path) {
+function strokeTwoTone(ctx, path, w = CURSOR_W) {
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
     ctx.setLineDash([]);
     ctx.strokeStyle = CURSOR_DARK;
-    ctx.lineWidth = CURSOR_W;
+    ctx.lineWidth = w;
     ctx.stroke(path);
     ctx.strokeStyle = CURSOR_LIGHT;
-    ctx.lineWidth = CURSOR_INNER;
-    ctx.setLineDash([CURSOR_DASH, CURSOR_DASH]);
+    ctx.lineWidth = w / 2;
+    ctx.setLineDash([w * 1.5, w * 1.5]);
     ctx.stroke(path);
 }
 
@@ -484,7 +494,7 @@ function drawBrushCursor(ctx, g, at) {
     }
 
     ctx.save();
-    strokeTwoTone(ctx, path);
+    strokeTwoTone(ctx, path, cursorWidth(g.px));
     ctx.restore();
 }
 
@@ -1000,7 +1010,23 @@ function initBrush() {
         if (base) $('ph-sradius').max = String(maxSize(surfaceW, surfaceH) - 1);
         const [wx, wy] = windowFor(sm.size, sm.shape);
         $('ph-sradius-val').textContent = `${wx} x ${wy}`;
-        setStrengthActive('ph-sstrength', sm.size > 1);
+
+        // At Area 0 the window is a single block, which is not a filter: it
+        // averages a block with itself. The global strength has nothing to act
+        // on, and neither does the brush that paints the filter by hand — which
+        // used to mean strokes that were recorded and then changed nothing at
+        // all. Both say so rather than accepting input and ignoring it.
+        const usable = sm.size > 1;
+        setStrengthActive('ph-sstrength', usable);
+        $('ph-smooth-hand').classList.toggle('inert-block', !usable);
+        $('ph-smooth-hand-note').hidden = usable;
+        $('ph-smooth-brush-on').disabled = !usable;
+        if (!usable && $('ph-smooth-brush-on').checked) {
+            // Through the event, so the exclusivity rule, the lit tool button
+            // and the on-picture flag all follow it down.
+            $('ph-smooth-brush-on').checked = false;
+            $('ph-smooth-brush-on').dispatchEvent(new Event('change', { bubbles: true }));
+        }
     };
     for (const btn of $('ph-smode').querySelectorAll('.shape')) {
         btn.addEventListener('click', () => {

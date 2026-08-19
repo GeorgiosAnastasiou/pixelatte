@@ -308,9 +308,17 @@
                         its radius is capped rather than merely discouraged.</dd>
 
                     <dt>Only part of the picture</dt>
-                    <dd>Set the filter under <strong>Smooth</strong>, leave its strength at 0, then
-                        switch the brush to <strong>Smooth</strong> mode and paint. The filter is applied to the blocks painted and nowhere else, and it is undoable like
-                        any other stroke.</dd>
+                    <dd>Under <strong>Smooth</strong>, set <strong>Area</strong> above 1 x 1 to
+                        choose a filter, leave <strong>Strength</strong> at 0 so it does nothing
+                        globally, then turn on <strong>Paint the filter on</strong> and drag. The
+                        filter lands on the blocks painted and nowhere else, at full strength, and
+                        it is undoable like any other stroke.</dd>
+
+                    <dt>Area first, or there is nothing to paint</dt>
+                    <dd>At 1 x 1 the window is a single block, and a block averaged with itself is
+                        the same block — so there is no filter yet, for the whole picture or for
+                        the brush. The by-hand controls stay greyed until Area is set, rather than
+                        accepting strokes that could not change anything.</dd>
                 </dl>
             </section>
 
@@ -834,23 +842,31 @@
                 <strong>whole picture</strong>. Leave it at 0 to change nothing globally.</p>
 
             <h3>Smooth by hand</h3>
-            <label class="check"><input type="checkbox" id="ph-smooth-brush-on">
-                Paint the filter on</label>
-            <p class="hint">Turn this on and drag on the picture to apply the filter above to
-                just the blocks it touches, at full strength, however the global strength is set.
-                This is its own brush — it does not use the Brush tool and nothing needs to be
-                combined. Undo covers each stroke.</p>
-            <div class="shape-row" id="ph-smooth-shapes" role="radiogroup" aria-label="Smoothing brush shape">
-                <button type="button" class="shape" data-shape="circle" aria-pressed="true">Circle</button>
-                <button type="button" class="shape" data-shape="square" aria-pressed="false">Square</button>
-                <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
-                <button type="button" class="shape" data-shape="vline" aria-pressed="false">Column</button>
+            <!-- Shown while Area is 0, where this brush has no filter to paint
+                 with: a 1 x 1 window averages a block with itself, so every
+                 stroke was a no-op and nothing said why. -->
+            <p class="hint" id="ph-smooth-hand-note" hidden>Set <strong>Area</strong> above
+                <em>1 x 1</em> first. At 1 x 1 there is no filter — a block averaged with itself
+                is the same block — so there would be nothing for this brush to paint.</p>
+            <div id="ph-smooth-hand">
+                <label class="check"><input type="checkbox" id="ph-smooth-brush-on">
+                    Paint the filter on</label>
+                <p class="hint">Turn this on and drag on the picture to apply the filter above to
+                    just the blocks it touches, at full strength, however the global strength is set.
+                    This is its own brush — it does not use the Brush tool and nothing needs to be
+                    combined. Undo covers each stroke.</p>
+                <div class="shape-row" id="ph-smooth-shapes" role="radiogroup" aria-label="Smoothing brush shape">
+                    <button type="button" class="shape" data-shape="circle" aria-pressed="true">Circle</button>
+                    <button type="button" class="shape" data-shape="square" aria-pressed="false">Square</button>
+                    <button type="button" class="shape" data-shape="hline" aria-pressed="false">Row</button>
+                    <button type="button" class="shape" data-shape="vline" aria-pressed="false">Column</button>
+                </div>
+                <div class="field">
+                    <label for="ph-smooth-size">Size <span id="ph-smooth-size-val" class="val">8</span></label>
+                    <input type="range" id="ph-smooth-size" min="1" max="64" value="8">
+                </div>
+                <button id="ph-smooth-clear" class="yellow">Clear painted smoothing</button>
             </div>
-            <div class="field">
-                <label for="ph-smooth-size">Size <span id="ph-smooth-size-val" class="val">8</span></label>
-                <input type="range" id="ph-smooth-size" min="1" max="64" value="8">
-            </div>
-            <button id="ph-smooth-clear" class="yellow">Clear painted smoothing</button>
         </div>
 
         <div class="pop" id="pop-ph-live" hidden>

@@ -38,6 +38,58 @@ console.log('\n--- stamp shapes ---');
     }
 }
 
+console.log('\n--- every size is the size it says, even ones included ---');
+{
+    // The bug this pins down: bounds derived by rounding a half-integer radius
+    // inward gave an odd span at every size, so size 4 covered the same blocks
+    // as size 3 and the "circle" at 1, 2 and 4 was a solid square.
+    const span = (offsets, axis) => {
+        const v = offsets.map((p) => p[axis]);
+        return Math.max(...v) - Math.min(...v) + 1;
+    };
+
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 16, 17]) {
+        ok(`square ${n} is ${n} blocks across`,
+            span(stampOffsets('square', n), 0) === n && span(stampOffsets('square', n), 1) === n);
+        ok(`circle ${n} is ${n} blocks across`,
+            span(stampOffsets('circle', n), 0) === n && span(stampOffsets('circle', n), 1) === n);
+        ok(`row ${n} is ${n} blocks long`, span(stampOffsets('hline', n), 0) === n);
+        ok(`column ${n} is ${n} blocks long`, span(stampOffsets('vline', n), 1) === n);
+    }
+
+    ok('square 4 covers 16 blocks', stampOffsets('square', 4).length === 16);
+
+    // Each size covers strictly more than the one below it. Without this the
+    // slider had two notches per real size and half of them did nothing.
+    for (const shape of ['circle', 'square']) {
+        let grows = true;
+        for (let n = 2; n <= 24; n++) {
+            if (stampOffsets(shape, n).length <= stampOffsets(shape, n - 1).length) grows = false;
+        }
+        ok(`${shape} grows at every notch of the slider`, grows);
+    }
+
+    // The heart of the report: a circle must never be the square of the same
+    // size. Size 2 is the one honest exception — two blocks across leaves no
+    // room for a corner to cut.
+    for (const n of [3, 4, 5, 6, 7, 8, 12, 16]) {
+        ok(`circle ${n} is not the square ${n}`,
+            stampOffsets('circle', n).length < stampOffsets('square', n).length,
+            `circle ${stampOffsets('circle', n).length} vs square ${stampOffsets('square', n).length}`);
+    }
+
+    // Even sizes have no centre block, so they are symmetric about the point
+    // between blocks rather than about the origin: x maps to -1-x. The lines
+    // are one block thick across their short axis, which stays on 0.
+    for (const shape of SHAPES) {
+        const s = stampOffsets(shape, 8);
+        const flipX = shape !== 'vline', flipY = shape !== 'hline';
+        const mirrored = s.every(([x, y]) => s.some(
+            (q) => key(q) === key([flipX ? -1 - x : x, flipY ? -1 - y : y])));
+        ok(`${shape} 8 is symmetric about its centre`, mirrored);
+    }
+}
+
 console.log('\n--- holding still adds nothing, however slowly you drag ---');
 {
     const layer = createBrushLayer(8, 8);

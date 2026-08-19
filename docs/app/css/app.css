@@ -1268,6 +1268,13 @@ input.cp-slider::-moz-range-thumb {
 .field.inert { opacity: 0.45; }
 .field.inert input { pointer-events: none; }
 
+/* The same, for a whole group of controls whose prerequisite is not met — the
+   smoothing brush while there is no filter for it to paint. Greyed and inert
+   rather than hidden: a control that vanishes is harder to find again than one
+   that is visibly waiting for something, and the note above it says what. */
+.inert-block { opacity: 0.45; }
+.inert-block input, .inert-block button { pointer-events: none; }
+
 
 /* A popover header that stays put while the panel scrolls under it. The
    negative offset cancels the panel's own top padding so it sits flush against

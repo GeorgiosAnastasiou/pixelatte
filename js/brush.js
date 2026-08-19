@@ -30,27 +30,46 @@ export const SHAPES = ['circle', 'square', 'hline', 'vline'];
  * and the four shapes stay comparable as the size slider moves. The circle is
  * the discrete disc — the same shape the account icon's head uses, and the one
  * a pixel artist expects — rather than a rasterised true circle.
+ *
+ * The span is exactly `n` blocks per axis, which is the part that used to be
+ * wrong. Deriving the bounds by rounding a half-integer radius inward — ceil(-r)
+ * to floor(r) — gives an odd span for every size, so an even size covered the
+ * same blocks as the odd one below it: size 4 was three blocks wide, not four.
+ * Worse, the fudge that kept the disc's cardinal tips at that width then reached
+ * the corners too, and a size-4 *circle* came out as a solid 3x3 square. Sizes
+ * 1, 2 and 4 were all square, whatever shape was selected.
+ *
+ * At even sizes the centre falls between blocks rather than on one, so it is
+ * carried explicitly rather than assumed to be the origin: `c` is -0.5 for even
+ * n and 0 for odd, and distances are measured from there.
  */
 export function stampOffsets(shape, size) {
     const n = Math.max(1, Math.round(size));
     const out = [];
     const r = (n - 1) / 2;
 
+    // n blocks per axis, as close to centred on the origin as an integer grid
+    // allows. The block at `lo` is the first; there are n of them.
+    const lo = -Math.floor(n / 2);
+    const hi = lo + n - 1;
+    const c = (lo + hi) / 2;          // 0 for odd n, -0.5 for even
+
     if (shape === 'hline') {
-        for (let i = 0; i < n; i++) out.push([Math.round(i - r), 0]);
+        for (let dx = lo; dx <= hi; dx++) out.push([dx, 0]);
         return out;
     }
     if (shape === 'vline') {
-        for (let i = 0; i < n; i++) out.push([0, Math.round(i - r)]);
+        for (let dy = lo; dy <= hi; dy++) out.push([0, dy]);
         return out;
     }
 
-    const lo = Math.ceil(-r), hi = Math.floor(r);
     for (let dy = lo; dy <= hi; dy++) {
         for (let dx = lo; dx <= hi; dx++) {
-            // +0.25 keeps the disc from losing its cardinal tips at even sizes,
-            // where the centre falls between blocks rather than on one.
-            if (shape === 'square' || dx * dx + dy * dy <= r * r + 0.25) out.push([dx, dy]);
+            const x = dx - c, y = dy - c;
+            // +0.25 keeps the disc from losing its cardinal tips: a block is
+            // included by the position of its centre, and the tip block's centre
+            // sits exactly on the radius.
+            if (shape === 'square' || x * x + y * y <= r * r + 0.25) out.push([dx, dy]);
         }
     }
     return out;
