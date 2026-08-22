@@ -29,6 +29,7 @@ import * as crop from './crop.js';
 import { spatialSmooth, blendMasked, maxSize, windowFor } from './smooth.js';
 import { saveBlob } from './save.js';
 import { setMediaLoaded } from './shell.js';
+import { getMarkLinger } from './settings.js';
 import { $, makeLogger, bindSlider, fillPaletteSelect, fileToImageData, nextFrame,
          confirmButton, setStrengthActive } from './ui.js';
 
@@ -482,19 +483,40 @@ function stampOutline(shape, size) {
     return segments;
 }
 
+/** The stamp's outline placed on a block, in view coordinates. */
+function outlinePath(g, at, shape, size) {
+    const path = new Path2D();
+    for (const [x0, y0, x1, y1] of stampOutline(shape, size)) {
+        path.moveTo(g.panX + (at.bx + x0) * g.px, g.panY + (at.by + y0) * g.px);
+        path.lineTo(g.panX + (at.bx + x1) * g.px, g.panY + (at.by + y1) * g.px);
+    }
+    return path;
+}
+
 /** Outline the blocks the active tool is about to cover, in view coordinates. */
 function drawBrushCursor(ctx, g, at) {
     const b = activeTool();
     if (!b || !at) return;
-
-    const path = new Path2D();
-    for (const [x0, y0, x1, y1] of stampOutline(b.shape, b.size)) {
-        path.moveTo(g.panX + (at.bx + x0) * g.px, g.panY + (at.by + y0) * g.px);
-        path.lineTo(g.panX + (at.bx + x1) * g.px, g.panY + (at.by + y1) * g.px);
-    }
-
     ctx.save();
-    strokeTwoTone(ctx, path, cursorWidth(g.px));
+    strokeTwoTone(ctx, outlinePath(g, at, b.shape, b.size), cursorWidth(g.px));
+    ctx.restore();
+}
+
+/**
+ * Where the last stamp landed, kept for a moment after it landed there.
+ *
+ * A finger is on top of the thing it is editing, and the cursor outline goes
+ * with it the instant it lifts — so on a phone a tap gave no sign of where it
+ * had actually gone, which is the one thing worth knowing about a tap. Holding
+ * the outline after the fact answers it without a mark that has to be cleaned
+ * up afterwards. Fainter than the live cursor because it is a record of
+ * something that has happened rather than an aim for something about to.
+ */
+function drawGhost(ctx, g, ghost) {
+    if (!ghost) return;
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    strokeTwoTone(ctx, outlinePath(g, ghost, ghost.shape, ghost.size), cursorWidth(g.px));
     ctx.restore();
 }
 
@@ -966,11 +988,32 @@ function initBrush() {
     /** The block a pointer event targets, once the reach offset is applied. */
     const toolBlock = (e) => view.toBlock(e.clientX, e.clientY + toolOffsetPx());
 
+    let ghost = null;         // the last stamp, while it is still being shown
+    let ghostTimer = null;
+
     view.setOverlay((ctx, g) => {
         drawReachLine(ctx, hoverRaw);
+        drawGhost(ctx, g, ghost);
         drawBrushCursor(ctx, g, hover);
         drawCropOverlay(ctx, g);
     });
+
+    /**
+     * Leave the stamp's outline behind for as long as Settings asks.
+     *
+     * One mark, not a trail: during a drag the live cursor is sitting on top of
+     * it anyway, and what this is for is the moment after the finger lifts.
+     * The timer is restarted per stamp, so a drag leaves exactly one mark, at
+     * the end, where the stroke finished.
+     */
+    const markGhost = (at) => {
+        const ms = getMarkLinger();
+        const b = activeTool();
+        clearTimeout(ghostTimer);
+        if (!ms || !b) { ghost = null; return; }
+        ghost = { bx: at.bx, by: at.by, shape: b.shape, size: b.size };
+        ghostTimer = setTimeout(() => { ghost = null; view.redraw(); }, ms);
+    };
 
     let mode = null;              // which tool owns the stroke in progress
 
@@ -992,9 +1035,12 @@ function initBrush() {
         if (drawLayer.stamp(at.bx, at.by, d.shape, d.size, drawColor)) repaintBrush();
     };
 
-    const paintAt = (at) => (mode === 'draw' ? paintDraw(at)
-                           : mode === 'smooth' ? paintSmooth(at)
-                           : paintBrush(at));
+    const paintAt = (at) => {
+        if (mode === 'draw') paintDraw(at);
+        else if (mode === 'smooth') paintSmooth(at);
+        else paintBrush(at);
+        markGhost(at);
+    };
 
     /* --- the smoothing filter, and the brush mode that applies it --- */
 

@@ -131,6 +131,68 @@ console.log('\n--- leaving a block and coming back nudges it again ---');
         && at(layer, 3, 4) === 0);
 }
 
+console.log('\n--- reversing counts as leaving ---');
+{
+    // Sweep right then back left with a brush wider than nothing. Coverage
+    // alone leaves a band around the turn at one nudge, because the stamp never
+    // uncovers it; a direction change ends the pass, so the whole swept run
+    // gets the two nudges the hand asked for.
+    const layer = createBrushLayer(40, 8);
+    layer.begin();
+    for (let x = 4; x <= 20; x++) layer.stamp(x, 4, 'square', 5, [-4, 0, 1]);
+    for (let x = 19; x >= 4; x--) layer.stamp(x, 4, 'square', 5, [-4, 0, 1]);
+    layer.end();
+
+    const reds = [];
+    for (let x = 4; x <= 20; x++) reds.push(at(layer, x, 4));
+    ok('every block swept twice is nudged twice', reds.every((v) => v === -8), reds.join(' '));
+
+    const blues = [];
+    for (let x = 4; x <= 20; x++) blues.push(at(layer, x, 4, 2));
+    ok('the other channels follow the same count', blues.every((v) => v === 2), blues.join(' '));
+}
+
+console.log('\n--- rubbing in place builds up, holding still does not ---');
+{
+    const layer = createBrushLayer(20, 8);
+    layer.begin();
+    layer.stamp(9, 4, 'square', 5, [-4, 0, 0]);
+    // Ten stamps at the same block: no movement, no direction, no second pass.
+    for (let i = 0; i < 10; i++) layer.stamp(9, 4, 'square', 5, [-4, 0, 0]);
+    ok('a held press is one nudge', at(layer, 9, 4) === -4, `${at(layer, 9, 4)}`);
+
+    // Now rub: right one, left one, four times over.
+    for (let i = 0; i < 4; i++) { layer.stamp(10, 4, 'square', 5, [-4, 0, 0]); layer.stamp(9, 4, 'square', 5, [-4, 0, 0]); }
+    ok('rubbing back and forth builds up', at(layer, 9, 4) === -16, `${at(layer, 9, 4)}`);
+    layer.end();
+}
+
+console.log('\n--- accumulation saturates, it never wraps ---');
+{
+    // Now that one press can nudge the same block hundreds of times, the clamp
+    // is the only thing between a long rub and a signed overflow. Int16 wraps
+    // at 32767; MAX_DELTA is 16, so a wrap would show up as a sign flip long
+    // before that, and a value outside the range would show up either way.
+    for (const delta of [MAX_DELTA, -MAX_DELTA, 1, -1]) {
+        const layer = createBrushLayer(12, 12);
+        layer.begin();
+        for (let i = 0; i < 500; i++) {
+            layer.stamp(5, 5, 'square', 3, [delta, delta, delta]);
+            layer.stamp(6, 5, 'square', 3, [delta, delta, delta]);   // reverse, so every
+            layer.stamp(5, 5, 'square', 3, [delta, delta, delta]);   // pass counts
+        }
+        layer.end();
+
+        let worst = 0;
+        for (const v of layer.deltas) worst = Math.max(worst, Math.abs(v));
+        ok(`1500 passes at ${delta} stay inside +/-${MAX_DELTA}`, worst <= MAX_DELTA, `reached ${worst}`);
+
+        const expected = delta > 0 ? MAX_DELTA : -MAX_DELTA;
+        ok(`1500 passes at ${delta} saturate at ${expected}`,
+            at(layer, 5, 5) === expected, `${at(layer, 5, 5)}`);
+    }
+}
+
 console.log('\n--- a wide brush re-enters block by block ---');
 {
     // Dragging sideways by one block: only the newly covered column is nudged,

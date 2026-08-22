@@ -131,7 +131,7 @@ export function createBrushLayer(bw, bh) {
 
         /** Begin a stroke. Everything until end() is one undo step. */
         begin() {
-            stroke = { covered: new Set(), before: new Map() };
+            stroke = { covered: new Set(), before: new Map(), at: null, dir: null };
         },
 
         /**
@@ -151,11 +151,34 @@ export function createBrushLayer(bw, bh) {
          * both, and the only way to build up a nudge was to lift and press
          * again for every pass.
          *
+         * Reversing counts as leaving. Sweeping right and back left, a band of
+         * blocks the width of the brush is never uncovered — the stamp turns
+         * around on top of them — so by coverage alone they were one long pass
+         * and stayed at a single nudge while everything either side of them got
+         * two. With a wide brush and a short rub that band is the whole stroke,
+         * which is the case where the brush most obviously refused to build up.
+         * A change of direction ends the pass instead, so what the hand did
+         * twice is counted twice.
+         *
          * @returns {boolean} whether anything changed
          */
         stamp(bx, by, shape, size, rgbDelta) {
             if (!stroke) this.begin();
             let changed = false;
+
+            // Direction is only meaningful between distinct blocks; wobbling
+            // inside one block has no direction and must not count as a turn.
+            if (stroke.at && (stroke.at.bx !== bx || stroke.at.by !== by)) {
+                const dir = { x: Math.sign(bx - stroke.at.bx), y: Math.sign(by - stroke.at.by) };
+                // Negative dot product: the stamp is heading back the way it
+                // came. Everything under it is entered afresh.
+                if (stroke.dir && dir.x * stroke.dir.x + dir.y * stroke.dir.y < 0) {
+                    stroke.covered.clear();
+                }
+                stroke.dir = dir;
+            }
+            if (!stroke.at || stroke.at.bx !== bx || stroke.at.by !== by) stroke.at = { bx, by };
+
             const covered = new Set();
 
             for (const [dx, dy] of stampOffsets(shape, size)) {

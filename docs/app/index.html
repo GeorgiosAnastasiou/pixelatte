@@ -235,7 +235,17 @@
 
                     <dt>Building up, and starting over</dt>
                     <dd>Rub back and forth over the same spot to push it further, one pass per
-                        crossing. Whatever it took, the whole press is a single undo step.</dd>
+                        crossing — turning around counts as leaving, so a wide brush builds up
+                        under its own middle rather than only along its edges. Passing twice with
+                        red at -4 puts that block at -8. It stops at 16 in either direction on
+                        each channel, however long the rub. Whatever it took, the whole press is a
+                        single undo step.</dd>
+
+                    <dt>Seeing where a tap landed</dt>
+                    <dd>A finger covers the block it is aiming at, so the outline of each stamp
+                        stays on the picture for a moment after the finger lifts. The length of
+                        that moment is under <strong>Brush marks</strong> in Settings; set it to 0
+                        to turn it off.</dd>
 
                     <dt>Reach</dt>
                     <dd>On a phone a hand covers the thing being edited. Reach moves where
@@ -410,6 +420,20 @@
                 <div class="theme-grid" id="theme-grid-dark"></div>
                 <div class="theme-group-label">Light</div>
                 <div class="theme-grid" id="theme-grid-light"></div>
+            </section>
+
+            <section class="block">
+                <h2>Brush marks</h2>
+                <p class="hint">A finger sits on top of the thing it is editing, so on a phone the
+                    outline is only visible once the finger has gone. The shape of the last stamp
+                    stays on the picture for a moment after each one, which is how you see where a
+                    tap actually landed.</p>
+                <div class="field">
+                    <label for="mark-linger">Outline lingers
+                        <span id="mark-linger-val" class="val">0.3</span>s</label>
+                    <input type="range" id="mark-linger" min="0" max="2000" step="100" value="300">
+                </div>
+                <p class="hint" id="mark-linger-note"></p>
             </section>
 
             <section class="block">

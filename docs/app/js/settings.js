@@ -1,8 +1,35 @@
 // settings.js — the settings panel (currently: appearance).
 
 import { THEMES, apply, save, getPreference, resolve, watchSystem } from './theme.js';
-import { $ } from './ui.js';
+import { $, bindSlider } from './ui.js';
 import { getColorModel, setColorModel } from './colorpicker.js';
+
+/**
+ * How long the outline of a stamp stays on the picture after it lands, in ms.
+ *
+ * Lives here rather than in photo.js because it is a preference, and it is read
+ * on every stamp rather than passed down, so the value has one home. Kept in a
+ * variable as well as in storage: the brush asks for it inside a pointermove
+ * handler, and localStorage is not something to touch at that rate.
+ */
+const MARK_KEY = 'pixelatte-mark-linger';
+const MARK_DEFAULT = 300;
+
+let markLinger = (() => {
+    try {
+        // Tested for null before converting: Number(null) is 0, and 0 is a
+        // legitimate stored value here — "never leave a mark" — so coercing
+        // first would read a store that has never been written as a deliberate
+        // choice to turn the feature off.
+        const raw = localStorage.getItem(MARK_KEY);
+        if (raw === null) return MARK_DEFAULT;
+        const ms = Number(raw);
+        return Number.isFinite(ms) && ms >= 0 ? ms : MARK_DEFAULT;
+    } catch { return MARK_DEFAULT; }
+})();
+
+/** @returns {number} milliseconds; 0 means the mark is not left behind at all. */
+export const getMarkLinger = () => markLinger;
 
 function card(theme, activeId, onPick) {
     const el = document.createElement('button');
@@ -59,6 +86,23 @@ export function init() {
     };
 
     $('theme-system').addEventListener('click', () => { save('system'); render(); });
+
+    // --- how long a stamp's outline lingers ---
+    const markNote = () => {
+        $('mark-linger-note').textContent = markLinger === 0
+            ? 'Off — the outline disappears with the finger.'
+            : `Each stamp stays outlined for ${(markLinger / 1000).toFixed(1)} seconds.`;
+    };
+    bindSlider('mark-linger', null, (ms) => {
+        markLinger = ms;
+        $('mark-linger-val').textContent = (ms / 1000).toFixed(1);
+        try { localStorage.setItem(MARK_KEY, String(ms)); } catch { /* session only */ }
+        markNote();
+    });
+    // The slider's markup carries the default; a stored preference overrides it.
+    $('mark-linger').value = String(markLinger);
+    $('mark-linger-val').textContent = (markLinger / 1000).toFixed(1);
+    markNote();
 
     // --- colour model ---
     const NOTES = {
